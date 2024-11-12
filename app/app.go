@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 	"os"
@@ -39,9 +38,9 @@ func NewHttpServer(port int, handler http.Handler) *http.Server {
 		Handler: handler,
 	}
 }
-func NewApp(port int, engine *gin.Engine, routers []Router, apps []IApp) *App {
+func NewApp(server *http.Server, routers []Router, apps []IApp) *App {
 	return &App{
-		httpSrv: NewHttpServer(port, engine),
+		httpSrv: server,
 		routers: routers,
 		apps:    apps,
 	}
