@@ -1,6 +1,13 @@
 #!/bin/bash
 
-version=${1:-"v0.0.1"}
+
+git add .
+
+git commit -m "update"
+git push
+sleep 3
+echo "推送完成 开始打标签"
+version=${1:-"v0.0.3"}
 git tag -d "${version}"
 git push origin :refs/tags/"${version}"
 msg=${2:-"Release ${version}"}
