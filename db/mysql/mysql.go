@@ -9,27 +9,27 @@ type MysqlOption struct {
 }
 type MysqlFn func(opt *MysqlOption)
 
-func WithUserName(username string) MysqlFn {
+func DataWithUserName(username string) MysqlFn {
 	return func(opt *MysqlOption) {
 		opt.Username = username
 	}
 }
-func WithPassword(password string) MysqlFn {
+func DataWithPassword(password string) MysqlFn {
 	return func(opt *MysqlOption) {
 		opt.Password = password
 	}
 }
-func WithHost(host string) MysqlFn {
+func DataWithHost(host string) MysqlFn {
 	return func(opt *MysqlOption) {
 		opt.Host = host
 	}
 }
-func WithPort(port int) MysqlFn {
+func DataWithPort(port int) MysqlFn {
 	return func(opt *MysqlOption) {
 		opt.Port = port
 	}
 }
-func WithDatabase(database string) MysqlFn {
+func DataWithDatabase(database string) MysqlFn {
 	return func(opt *MysqlOption) {
 		opt.Database = database
 	}
