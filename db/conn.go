@@ -1,9 +1,10 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
-	"github.com/go-redis/redis"
+	"github.com/redis/go-redis/v9"
 	mysqlCfg "github.com/zngue/zng_app/db/mysql"
 	redisCfg "github.com/zngue/zng_app/db/redis"
 	"gorm.io/driver/mysql"
@@ -35,7 +36,8 @@ func NewRedis(fns ...redisCfg.RedisFn) (*redis.Client, func(), error) {
 		MinIdleConns: 10,
 		DB:           config.Database,
 	})
-	_, err := redisClient.Ping().Result()
+	ctx := context.Background()
+	_, err := redisClient.Ping(ctx).Result()
 	if err != nil {
 		return nil, nil, err
 	}

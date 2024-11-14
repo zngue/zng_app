@@ -1,16 +1,31 @@
-package data
+package db
 
 import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	redis "github.com/redis/go-redis/v9"
+	"github.com/redis/go-redis/v9"
+	"time"
 )
 
-type RedisStream struct {
-}
+var rdb *redis.Client
 
+type Stream struct {
+	TopicKey     string
+	MaxLen       int64
+	GroupName    string
+	Group        string
+	Consumer     string
+	Streams      []string // list of streams and ids, e.g. stream1 stream2 id1 id2
+	Count        int64
+	Block        time.Duration
+	NoAck        bool
+	ConsumerName string
+}
+type Config struct {
+	Stream *Stream
+}
 type StreamMsg struct {
 	Id   string
 	Data string
@@ -19,6 +34,8 @@ type StreamMsg struct {
 // stream会强制转换类型string的json，所以每个属性必须为string
 type MsgVal struct {
 	Data string `json:"data"`
+}
+type RedisStream struct {
 }
 
 func NewRedisStream() *RedisStream {
@@ -52,10 +69,11 @@ func (rs *RedisStream) mapToStruct(tmpMap map[string]interface{}) (*MsgVal, erro
 }
 
 // CreateStreamAndGroup 第一次创建stream和group（只允许第一次）
-func (rs *RedisStream) CreateStreamAndGroup(ctx context.Context) error {
-	config, err := conf.GetConfig()
-	if err != nil {
-		return err
+func (rs *RedisStream) CreateStreamAndGroup(ctx context.Context) (err error) {
+	config := &Config{
+		Stream: &Stream{
+			TopicKey: "test_stream",
+		},
 	}
 	count, err := rdb.Exists(ctx, config.Stream.TopicKey).Result()
 	if err != nil {
@@ -96,11 +114,11 @@ func (rs *RedisStream) CreateStreamAndGroup(ctx context.Context) error {
 
 // CreateMsg 向对应stream写消息
 func (rs *RedisStream) CreateMsg(ctx context.Context, data string) (string, error) {
-	config, err := conf.GetConfig()
-	if err != nil {
-		return "", err
+	config := &Config{
+		Stream: &Stream{
+			TopicKey: "test_stream",
+		},
 	}
-
 	// 把data打包成base64，避免怪异的符号影响json
 	b64 := base64.StdEncoding.EncodeToString([]byte(data))
 	msgMap, err := rs.structToMap(&MsgVal{
@@ -123,9 +141,10 @@ func (rs *RedisStream) CreateMsg(ctx context.Context, data string) (string, erro
 
 // ReadGroupMsg 读取一条stream的消息id和内容
 func (rs *RedisStream) ReadGroupMsg(ctx context.Context) (*StreamMsg, error) {
-	config, err := conf.GetConfig()
-	if err != nil {
-		return nil, err
+	config := &Config{
+		Stream: &Stream{
+			TopicKey: "test_stream",
+		},
 	}
 	st, err := rdb.XReadGroup(ctx, &redis.XReadGroupArgs{
 		Group:    config.Stream.GroupName,
@@ -162,9 +181,15 @@ func (rs *RedisStream) ReadGroupMsg(ctx context.Context) (*StreamMsg, error) {
 
 // ReadPendingMsg 读取一条等待中未发送ACK的消息
 func (rs *RedisStream) ReadPendingMsg(ctx context.Context) (*StreamMsg, error) {
-	config, err := conf.GetConfig()
-	if err != nil {
-		return nil, err
+	config := &Config{
+		Stream: &Stream{
+			TopicKey:     "test_stream",
+			ConsumerName: "consumer1",
+			Block:        time.Second * 5,
+			NoAck:        true,
+			Count:        1,
+			Group:        "group1",
+		},
 	}
 
 	// 先获取pending的消息ID
@@ -214,10 +239,11 @@ func (rs *RedisStream) ReadPendingMsg(ctx context.Context) (*StreamMsg, error) {
 }
 
 // SetACK 设置消息已消费
-func (rs *RedisStream) SetACK(ctx context.Context, id string) error {
-	config, err := conf.GetConfig()
-	if err != nil {
-		return err
+func (rs *RedisStream) SetACK(ctx context.Context, id string) (err error) {
+	config := &Config{
+		Stream: &Stream{
+			TopicKey: "test_stream",
+		},
 	}
 	_, err = rdb.XAck(ctx, config.Stream.TopicKey, config.Stream.GroupName, id).Result()
 	if err != nil {
