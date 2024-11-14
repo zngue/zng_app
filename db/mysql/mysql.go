@@ -1,36 +1,36 @@
-package db
+package mysql
 
-type MysqlOption struct {
+type Option struct {
 	Username string
 	Password string
 	Host     string
 	Port     int
 	Database string
 }
-type MysqlFn func(opt *MysqlOption)
+type Fn func(opt *Option)
 
-func DataWithUserName(username string) MysqlFn {
-	return func(opt *MysqlOption) {
+func DataWithUserName(username string) Fn {
+	return func(opt *Option) {
 		opt.Username = username
 	}
 }
-func DataWithPassword(password string) MysqlFn {
-	return func(opt *MysqlOption) {
+func DataWithPassword(password string) Fn {
+	return func(opt *Option) {
 		opt.Password = password
 	}
 }
-func DataWithHost(host string) MysqlFn {
-	return func(opt *MysqlOption) {
+func DataWithHost(host string) Fn {
+	return func(opt *Option) {
 		opt.Host = host
 	}
 }
-func DataWithPort(port int) MysqlFn {
-	return func(opt *MysqlOption) {
+func DataWithPort(port int) Fn {
+	return func(opt *Option) {
 		opt.Port = port
 	}
 }
-func DataWithDatabase(database string) MysqlFn {
-	return func(opt *MysqlOption) {
+func DataWithDatabase(database string) Fn {
+	return func(opt *Option) {
 		opt.Database = database
 	}
 }

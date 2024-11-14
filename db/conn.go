@@ -13,8 +13,8 @@ import (
 	"time"
 )
 
-func NewRedis(fns ...redisCfg.RedisFn) (*redis.Client, func(), error) {
-	var config = &redisCfg.RedisOption{
+func NewRedis(fns ...redisCfg.Fn) (*redis.Client, func(), error) {
+	var config = &redisCfg.Option{
 		Password: "",
 		Port:     6379,
 		Database: 0,
@@ -53,8 +53,8 @@ func NewRedis(fns ...redisCfg.RedisFn) (*redis.Client, func(), error) {
 	}
 	return redisClient, cleanup, nil
 }
-func NewDB(fns ...mysqlCfg.MysqlFn) (db *gorm.DB, err error) {
-	var config = &mysqlCfg.MysqlOption{
+func NewDB(fns ...mysqlCfg.Fn) (db *gorm.DB, err error) {
+	var config = &mysqlCfg.Option{
 		Port: 3306,
 	}
 	for _, fn := range fns {
