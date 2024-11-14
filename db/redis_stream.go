@@ -1,25 +1,24 @@
-package db
+package data
 
 import (
 	"context"
-	"echo_layout_v2/internal/conf"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"github.com/go-redis/redis"
+	redis "github.com/redis/go-redis/v9"
 )
 
-type RedisStream struct{}
+type RedisStream struct {
+}
 
 type StreamMsg struct {
-	Id  string
-	Val *MsgVal
+	Id   string
+	Data string
 }
 
 // stream会强制转换类型string的json，所以每个属性必须为string
 type MsgVal struct {
-	Name string `json:"name"`
-	Pwd  string `json:"pwd"`
-	Time string `json:"time"`
+	Data string `json:"data"`
 }
 
 func NewRedisStream() *RedisStream {
@@ -65,8 +64,7 @@ func (rs *RedisStream) CreateStreamAndGroup(ctx context.Context) error {
 	if count == 0 {
 		// 没有被创建
 		tmpMap, err := rs.structToMap(&MsgVal{
-			Name: "first",
-			Pwd:  "new",
+			Data: "first",
 		})
 		if err != nil {
 			return err
@@ -97,13 +95,17 @@ func (rs *RedisStream) CreateStreamAndGroup(ctx context.Context) error {
 }
 
 // CreateMsg 向对应stream写消息
-func (rs *RedisStream) CreateMsg(ctx context.Context, msg *MsgVal) (string, error) {
+func (rs *RedisStream) CreateMsg(ctx context.Context, data string) (string, error) {
 	config, err := conf.GetConfig()
 	if err != nil {
 		return "", err
 	}
 
-	msgMap, err := rs.structToMap(msg)
+	// 把data打包成base64，避免怪异的符号影响json
+	b64 := base64.StdEncoding.EncodeToString([]byte(data))
+	msgMap, err := rs.structToMap(&MsgVal{
+		Data: b64,
+	})
 	if err != nil {
 		return "", err
 	}
@@ -146,10 +148,14 @@ func (rs *RedisStream) ReadGroupMsg(ctx context.Context) (*StreamMsg, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	// 从base64解开
+	data, err := base64.StdEncoding.DecodeString(msg.Data)
+	if err != nil {
+		return nil, err
+	}
 	sm := &StreamMsg{
-		Id:  st[0].Messages[0].ID,
-		Val: msg,
+		Id:   st[0].Messages[0].ID,
+		Data: string(data),
 	}
 	return sm, nil
 }
@@ -195,14 +201,19 @@ func (rs *RedisStream) ReadPendingMsg(ctx context.Context) (*StreamMsg, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	// 从base64解开
+	data, err := base64.StdEncoding.DecodeString(msg.Data)
+	if err != nil {
+		return nil, err
+	}
 	sm := &StreamMsg{
-		Id:  peMsg[0].ID,
-		Val: msg,
+		Id:   peMsg[0].ID,
+		Data: string(data),
 	}
 	return sm, err
 }
 
+// SetACK 设置消息已消费
 func (rs *RedisStream) SetACK(ctx context.Context, id string) error {
 	config, err := conf.GetConfig()
 	if err != nil {
