@@ -31,7 +31,7 @@ type StreamMsg struct {
 	Data string
 }
 
-// stream会强制转换类型string的json，所以每个属性必须为string
+// MsgVal stream会强制转换类型string的json，所以每个属性必须为string
 type MsgVal struct {
 	Data string `json:"data"`
 }
