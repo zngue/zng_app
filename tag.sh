@@ -13,7 +13,5 @@ git push origin :refs/tags/"${version}"
 msg=${2:-"Release ${version}"}
 git tag -a "${version}" -m "${msg}"
 git push origin "${version}"
-
-
-
+echo  "推送标签"
 
