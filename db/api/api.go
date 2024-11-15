@@ -64,8 +64,8 @@ func DataWithErr(ctx *gin.Context, err error, data any, fns ...Fn) {
 		var fnArr []Fn
 		if data != nil {
 			fnArr = append(fnArr, Data(data))
-			fnArr = append(fnArr, fns...)
 		}
+		fnArr = append(fnArr, fns...)
 		DataSuccess(ctx, fnArr...)
 	}
 }
@@ -77,12 +77,15 @@ func DataError(ctx *gin.Context, err error, fns ...Fn) {
 		Msg:  ErrorMsg,
 		Data: nil,
 	}
+	if err != nil {
+		fns = append(fns, Err(err))
+	}
 	if len(fns) > 0 {
 		for _, fn := range fns {
 			fn(data)
 		}
 	}
-	ctx.JSON(200, err)
+	ctx.JSON(200, data)
 }
 
 // WeChatPayError /*
