@@ -3,8 +3,11 @@ package data
 import (
 	"errors"
 	"github.com/zngue/zng_app/db/data/page"
+	"github.com/zngue/zng_app/db/data/where"
 	"gorm.io/gorm"
 )
+
+var ErrData = errors.New("data does not exist")
 
 type Fn func(db *gorm.DB) *gorm.DB
 
@@ -19,11 +22,79 @@ type ListRequest struct {
 	Select any
 	Fn     Fn
 }
+
+type OptionFn func(r *ListRequest)
+
+func ListWhereStruct(v any) OptionFn {
+	return func(r *ListRequest) {
+		if v != nil {
+			options := where.Where(v)
+			r.Where = where.NewWhere(options...)
+		}
+	}
+}
+func ListWhereOption(fns ...where.Fn) OptionFn {
+	return func(r *ListRequest) {
+		if len(fns) > 0 {
+			r.Where = where.NewWhereFn(fns...)
+		}
+	}
+}
+func ListOrderOption(v []string) OptionFn {
+	return func(r *ListRequest) {
+		if v != nil {
+			r.Order = v
+		}
+	}
+}
+func ListSelectOption(v any) OptionFn {
+	return func(r *ListRequest) {
+		r.Select = v
+	}
+}
+func ListFnWithData(fn Fn) OptionFn {
+	return func(r *ListRequest) {
+		r.Fn = fn
+	}
+}
+func PageWithData(fns ...page.Fn) OptionFn {
+	return func(r *ListRequest) {
+		r.Page = page.NewPage(fns...)
+	}
+}
+
 type ContentRequest struct {
 	Where  map[string]any
 	Select any
 	Fn     Fn
 	Order  []string
+}
+type ContentFn func(r *ContentRequest)
+
+func ContentWhereStruct(v any) ContentFn {
+	return func(r *ContentRequest) {
+		if v != nil {
+			options := where.Where(v)
+			r.Where = where.NewWhere(options...)
+		}
+	}
+}
+func ContentWhereOption(fns ...where.Fn) ContentFn {
+	return func(r *ContentRequest) {
+		if len(fns) > 0 {
+			r.Where = where.NewWhereFn(fns...)
+		}
+	}
+}
+func ContentSelect(v any) ContentFn {
+	return func(r *ContentRequest) {
+		r.Select = v
+	}
+}
+func ContentWithFn(fn Fn) ContentFn {
+	return func(r *ContentRequest) {
+		r.Fn = fn
+	}
 }
 
 // Content 获取单条数据
@@ -37,7 +108,25 @@ func (d *DB[T]) Content(data *ContentRequest) (resData *T, err error) {
 	})
 	err = db.First(&resData).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		err = errors.New("数据不存在")
+		err = ErrData
+	}
+	return
+}
+
+// ListFn 获取列表带自定义Fn
+func (d *DB[T]) ListFn(fns ...OptionFn) (list []*T, err error) {
+	var data = &ListRequest{}
+	for _, fn := range fns {
+		fn(data)
+	}
+	db := d.Source.Model(d.Model)
+	db = d.ListHelper(db, data)
+	if data.Page.Page != -1 {
+		db = data.Page.PageHandle(db)
+	}
+	err = db.Find(&list).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		err = nil
 	}
 	return
 }
@@ -75,6 +164,28 @@ func (d *DB[T]) ListHelper(db *gorm.DB, data *ListRequest) *gorm.DB {
 		db = data.Fn(db)
 	}
 	return db
+}
+
+// ListPageFn 获取列表带分页
+func (d *DB[T]) ListPageFn(fns ...OptionFn) (list []*T, count int64, err error) {
+	var data = &ListRequest{}
+	for _, fn := range fns {
+		fn(data)
+	}
+	db := d.Source.Model(d.Model)
+	db = d.ListHelper(db, data)
+	if data.Page != nil && data.Page.Page != -1 {
+		err = db.Count(&count).Error
+		if err != nil {
+			return
+		}
+		db = data.Page.PageHandle(db)
+	}
+	err = db.Find(&list).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		err = nil
+	}
+	return
 }
 
 // ListPage 获取列表带分页
