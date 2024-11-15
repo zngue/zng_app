@@ -25,7 +25,7 @@ type ListRequest struct {
 
 type OptionFn func(r *ListRequest)
 
-func ListWhereStruct(v any) OptionFn {
+func WhereStruct(v any) OptionFn {
 	return func(r *ListRequest) {
 		if v != nil {
 			options := where.Where(v)
@@ -33,26 +33,26 @@ func ListWhereStruct(v any) OptionFn {
 		}
 	}
 }
-func ListWhereOption(fns ...where.Fn) OptionFn {
+func WhereOption(fns ...where.Fn) OptionFn {
 	return func(r *ListRequest) {
 		if len(fns) > 0 {
 			r.Where = where.NewWhereFn(fns...)
 		}
 	}
 }
-func ListOrderOption(v []string) OptionFn {
+func OrderOption(v []string) OptionFn {
 	return func(r *ListRequest) {
 		if v != nil {
 			r.Order = v
 		}
 	}
 }
-func ListSelectOption(v any) OptionFn {
+func SelectOption(v any) OptionFn {
 	return func(r *ListRequest) {
 		r.Select = v
 	}
 }
-func ListFnWithData(fn Fn) OptionFn {
+func FnWithData(fn Fn) OptionFn {
 	return func(r *ListRequest) {
 		r.Fn = fn
 	}
@@ -69,32 +69,20 @@ type ContentRequest struct {
 	Fn     Fn
 	Order  []string
 }
-type ContentFn func(r *ContentRequest)
 
-func ContentWhereStruct(v any) ContentFn {
-	return func(r *ContentRequest) {
-		if v != nil {
-			options := where.Where(v)
-			r.Where = where.NewWhere(options...)
-		}
+// ContentFn 获取单条数据
+func (d *DB[T]) ContentFn(fns ...OptionFn) (resData *T, err error) {
+	var data = &ListRequest{}
+	for _, fn := range fns {
+		fn(data)
 	}
-}
-func ContentWhereOption(fns ...where.Fn) ContentFn {
-	return func(r *ContentRequest) {
-		if len(fns) > 0 {
-			r.Where = where.NewWhereFn(fns...)
-		}
+	db := d.Source.Model(d.Model)
+	db = d.ListHelper(db, data)
+	err = db.First(&resData).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		err = ErrData
 	}
-}
-func ContentSelect(v any) ContentFn {
-	return func(r *ContentRequest) {
-		r.Select = v
-	}
-}
-func ContentWithFn(fn Fn) ContentFn {
-	return func(r *ContentRequest) {
-		r.Fn = fn
-	}
+	return
 }
 
 // Content 获取单条数据
