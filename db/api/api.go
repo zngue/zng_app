@@ -44,7 +44,7 @@ func Msg(msg string) Fn {
 }
 
 // Success /*
-func Success(ctx *gin.Context, fns ...Fn) {
+func DataSuccess(ctx *gin.Context, fns ...Fn) {
 	var success = &Response{
 		Code: SuccessCode,
 		Msg:  SuccessMsg,
@@ -59,30 +59,27 @@ func Success(ctx *gin.Context, fns ...Fn) {
 }
 func DataWithErr(ctx *gin.Context, err error, data any, fns ...Fn) {
 	if err != nil {
-		var fnArr []Fn
-		fnArr = append(fnArr, Err(err))
-		fnArr = append(fnArr, fns...)
-		Error(ctx, fnArr...)
+		DataError(ctx, err, fns...)
 	} else {
 		var fnArr []Fn
 		if data != nil {
 			fnArr = append(fnArr, Data(data))
 			fnArr = append(fnArr, fns...)
 		}
-		Success(ctx, fnArr...)
+		DataSuccess(ctx, fnArr...)
 	}
 }
 
 // Error /*
-func Error(ctx *gin.Context, fns ...Fn) {
-	var err = &Response{
+func DataError(ctx *gin.Context, err error, fns ...Fn) {
+	var data = &Response{
 		Code: ErrorCode,
 		Msg:  ErrorMsg,
 		Data: nil,
 	}
 	if len(fns) > 0 {
 		for _, fn := range fns {
-			fn(err)
+			fn(data)
 		}
 	}
 	ctx.JSON(200, err)
