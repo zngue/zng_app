@@ -12,24 +12,10 @@ import (
 	"time"
 )
 
-type Router interface {
-	Router()
-}
-type IApp interface {
-	Run() (err error)
-	Stop(ctx context.Context) error
-}
-type Cron struct {
-	Apps []IApp
-}
-type IRun interface {
-	Run()
-}
-
 type App struct {
 	httpSrv *http.Server
 	apps    []IApp
-	routers []Router
+	routers []IRouter
 }
 
 func NewHttpServer(port int, handler http.Handler) *http.Server {
@@ -38,7 +24,7 @@ func NewHttpServer(port int, handler http.Handler) *http.Server {
 		Handler: handler,
 	}
 }
-func NewApp(server *http.Server, routers []Router, apps []IApp) *App {
+func NewApp(server *http.Server, routers []IRouter, apps []IApp) *App {
 	return &App{
 		httpSrv: server,
 		routers: routers,
@@ -62,7 +48,7 @@ func (a *App) Run() (err error) {
 			}
 		}
 	}()
-	log.Printf("start runnig")
+	log.Printf("start app running")
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit

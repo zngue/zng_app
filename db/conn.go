@@ -90,7 +90,7 @@ func NewDB(fns ...mysqlCfg.Fn) (db *gorm.DB, err error) {
 	)
 	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
-			// 使用单数表名，启用该选项，此时，`User` 的表名应该是 `t_user`,加S
+			// 使用单数表名，启用该选项，此时，`User` 的表名应该是 `t_user`,加
 			SingularTable: true,
 		},
 		//对于写操作（创建、更新、删除），为了确保数据的完整性，GORM 会将它们封装在事务内运行。但这会降低性能，你可以在初始化时禁用这种方式
