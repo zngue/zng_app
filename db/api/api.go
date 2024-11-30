@@ -42,8 +42,21 @@ func Msg(msg string) Fn {
 		response.Msg = msg
 	}
 }
+func DataWithResponse(ctx *gin.Context, fns ...Fn) {
+	var success = &Response{
+		Code: SuccessCode,
+		Msg:  SuccessMsg,
+		Data: nil,
+	}
+	if len(fns) > 0 {
+		for _, fn := range fns {
+			fn(success)
+		}
+	}
+	ctx.JSON(200, success)
+}
 
-// Success /*
+// DataSuccess Success /*
 func DataSuccess(ctx *gin.Context, fns ...Fn) {
 	var success = &Response{
 		Code: SuccessCode,
