@@ -103,7 +103,9 @@ func (d *DB[T]) Content(data *ContentRequest) (resData *T, err error) {
 
 // ListFn 获取列表带自定义Fn
 func (d *DB[T]) ListFn(fns ...OptionFn) (list []*T, err error) {
-	var data = &ListRequest{}
+	var data = &ListRequest{
+		Page: page.NewPage(),
+	}
 	for _, fn := range fns {
 		fn(data)
 	}

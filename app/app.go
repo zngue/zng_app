@@ -53,7 +53,7 @@ func (a *App) Run() (err error) {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Printf("shutdown app")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	// 关闭应用
 	if err = a.Stop(ctx); err != nil {
@@ -72,7 +72,7 @@ func (a *App) Stop(ctx context.Context) error {
 			// 关闭其他服务
 			for _, app := range a.apps {
 				if err := app.Stop(ctx); err != nil {
-					fmt.Println(err)
+					log.Println(err)
 					continue
 				}
 			}
@@ -80,8 +80,6 @@ func (a *App) Stop(ctx context.Context) error {
 	}()
 	return nil
 }
-
-type Fn func() (*App, func(), error)
 
 func NewAppRunner(port int32, fn Fn) (err error) {
 	var (
