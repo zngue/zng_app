@@ -1,6 +1,9 @@
 package api
 
-import "github.com/gin-gonic/gin"
+import (
+	"errors"
+	"github.com/gin-gonic/gin"
+)
 
 var (
 	SuccessCode    = 200
@@ -9,6 +12,7 @@ var (
 	SuccessMsg     = "success"
 	ErrorMsg       = "error"
 	ParameterMsg   = "参数错误"
+	ErrParameter   = errors.New("请求参数错误")
 )
 
 type Response struct {
@@ -83,7 +87,7 @@ func DataWithErr(ctx *gin.Context, err error, data any, fns ...Fn) {
 	}
 }
 
-// Error /*
+// DataError Error /*
 func DataError(ctx *gin.Context, err error, fns ...Fn) {
 	var data = &Response{
 		Code: ErrorCode,

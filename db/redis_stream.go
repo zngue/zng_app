@@ -42,8 +42,8 @@ func NewRedisStream() *RedisStream {
 	return &RedisStream{}
 }
 
-func (rs *RedisStream) structToMap(msg *MsgVal) (map[string]interface{}, error) {
-	tmpMap := make(map[string]interface{})
+func (rs *RedisStream) structToMap(msg *MsgVal) (map[string]any, error) {
+	tmpMap := make(map[string]any)
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return nil, err
@@ -55,7 +55,7 @@ func (rs *RedisStream) structToMap(msg *MsgVal) (map[string]interface{}, error) 
 	return tmpMap, nil
 }
 
-func (rs *RedisStream) mapToStruct(tmpMap map[string]interface{}) (*MsgVal, error) {
+func (rs *RedisStream) mapToStruct(tmpMap map[string]any) (*MsgVal, error) {
 	msg := &MsgVal{}
 	msgBytes, err := json.Marshal(tmpMap)
 	if err != nil {
