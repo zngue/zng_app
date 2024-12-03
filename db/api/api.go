@@ -94,6 +94,12 @@ func DataError(ctx *gin.Context, err error, fns ...Fn) {
 		Msg:  ErrorMsg,
 		Data: nil,
 	}
+	var codeErr *Error
+	isCodeErr := errors.As(err, &codeErr)
+	if isCodeErr {
+		CodeError(ctx, codeErr)
+		return
+	}
 	if err != nil {
 		fns = append(fns, Err(err))
 	}
@@ -103,6 +109,10 @@ func DataError(ctx *gin.Context, err error, fns ...Fn) {
 		}
 	}
 	ctx.JSON(200, data)
+}
+
+func CodeError(ctx *gin.Context, err *Error) {
+	ctx.JSON(err.Code, err.Data)
 }
 
 // WeChatPayError /*
