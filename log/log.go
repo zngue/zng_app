@@ -114,25 +114,25 @@ func (l *Log) LogMode(level logger.LogLevel) logger.Interface {
 	return &newLogger
 }
 
-func (l *Log) Info(ctx context.Context, s string, i ...any) {
+func (l *Log) Info(_ context.Context, s string, i ...any) {
 	if l.LogLevel >= logger.Info {
 		Default().Sugar().Info(i...)
 	}
 }
 
-func (l *Log) Warn(ctx context.Context, s string, i ...any) {
+func (l *Log) Warn(_ context.Context, s string, i ...any) {
 	if l.LogLevel >= logger.Warn {
 		Default().Sugar().Warn(i...)
 	}
 }
 
-func (l *Log) Error(ctx context.Context, s string, i ...any) {
+func (l *Log) Error(_ context.Context, s string, i ...any) {
 	if l.LogLevel >= logger.Error {
 		Default().Sugar().Error(i...)
 	}
 }
 
-func (l *Log) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
+func (l *Log) Trace(_ context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
 	elapsed := time.Since(begin)
 	var data []zap.Field
 	sql, rows := fc()
