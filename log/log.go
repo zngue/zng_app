@@ -8,12 +8,12 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/utils"
+	"io"
 	"os"
 	"time"
 )
 
 var DefaultLogger *zap.Logger
-var LevelType int
 
 type SaveLog struct {
 }
@@ -27,13 +27,33 @@ func NewLogSave() *SaveLog {
 	return new(SaveLog)
 }
 
+type LevelType int8
+
+const (
+	LevelSilent LevelType = iota + 1
+	LevelError
+	LevelWarn
+	LevelInfo
+	LevelDebug
+)
+
 type Config struct {
-	Filename   string
-	MaxSize    int
-	MaxBackups int
-	MaxAge     int
-	Compress   bool
-	Level      int8
+	Filename    string
+	MaxSize     int
+	MaxBackups  int
+	MaxAge      int
+	Compress    bool
+	Level       LevelType
+	WriteSyncer io.Writer
+}
+
+var WriterConfigDefault = &Config{
+	Filename:   "nacos/log.log",
+	MaxSize:    100,
+	MaxBackups: 3,
+	MaxAge:     30,
+	Compress:   true,
+	Level:      LevelDebug,
 }
 
 func Default() *zap.Logger {
@@ -49,24 +69,22 @@ func Default() *zap.Logger {
 		return DefaultLogger
 	}
 	fileLog := zapcore.AddSync(&lumberjack.Logger{
-		Filename:   "nacos/log.log", // 日志文件路径
-		MaxSize:    100,             // 单个文件最大大小，单位为MB
-		MaxBackups: 3,               // 保留的旧文件的最大个数
-		MaxAge:     30,              // 最大天数
-		Compress:   true,            // 是否压缩
+		Filename:   WriterConfigDefault.Filename,   // 日志文件路径
+		MaxSize:    WriterConfigDefault.MaxSize,    // 单个文件最大大小，单位为MB
+		MaxBackups: WriterConfigDefault.MaxBackups, // 保留的旧文件的最大个数
+		MaxAge:     WriterConfigDefault.MaxAge,     // 最大天数
+		Compress:   WriterConfigDefault.Compress,   // 是否压缩
 	})
-
-	writeSyncer := zapcore.NewMultiWriteSyncer(
-		fileLog,
-		zapcore.AddSync(NewLogSave()),
-	)
-
-	if LevelType == 5 {
-		writeSyncer = zapcore.NewMultiWriteSyncer(
-			zapcore.AddSync(os.Stdout),
-			zapcore.AddSync(NewLogSave()),
-		)
+	var wrSlice []zapcore.WriteSyncer
+	if WriterConfigDefault.WriteSyncer != nil {
+		wrSlice = append(wrSlice, zapcore.AddSync(WriterConfigDefault.WriteSyncer))
 	}
+	if WriterConfigDefault.Level == LevelSilent || WriterConfigDefault.Level == LevelDebug {
+		wrSlice = append(wrSlice, zapcore.AddSync(os.Stdout))
+	} else {
+		wrSlice = append(wrSlice, fileLog)
+	}
+	writeSyncer := zapcore.NewMultiWriteSyncer(wrSlice...)
 	encoderConfig := zap.NewProductionEncoderConfig()
 	level := zap.NewAtomicLevelAt(zap.InfoLevel)
 	var core zapcore.Core
@@ -138,9 +156,11 @@ func (l *Log) Trace(ctx context.Context, begin time.Time, fc func() (sql string,
 	}
 }
 
-func NewLog(level int) logger.Interface {
+func NewLog(opt *Config) logger.Interface {
 	var l = new(Log)
-	l.LogLevel = logger.LogLevel(level)
-	LevelType = level
+	if opt != nil {
+		WriterConfigDefault = opt
+	}
+	l.LogLevel = logger.LogLevel(WriterConfigDefault.Level)
 	return l
 }

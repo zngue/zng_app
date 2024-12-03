@@ -5,16 +5,17 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/redis/go-redis/v9"
-	mysqlCfg "github.com/zngue/zng_app/db/mysql"
-	redisCfg "github.com/zngue/zng_app/db/redis"
+	mysqlConfig "github.com/zngue/zng_app/db/mysql"
+	redisConfig "github.com/zngue/zng_app/db/redis"
+	"github.com/zngue/zng_app/log"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 	"time"
 )
 
-func NewRedis(fns ...redisCfg.Fn) (*redis.Client, func(), error) {
-	var config = &redisCfg.Option{
+func NewRedis(fns ...redisConfig.Fn) (*redis.Client, func(), error) {
+	var config = &redisConfig.Option{
 		Password: "",
 		Port:     6379,
 		Database: 0,
@@ -49,12 +50,11 @@ func NewRedis(fns ...redisCfg.Fn) (*redis.Client, func(), error) {
 				return
 			}
 		}(redisClient)
-		fmt.Println("redis close")
 	}
 	return redisClient, cleanup, nil
 }
-func NewDB(fns ...mysqlCfg.Fn) (db *gorm.DB, err error) {
-	var config = &mysqlCfg.Option{
+func NewDB(fns ...mysqlConfig.Fn) (db *gorm.DB, err error) {
+	var config = &mysqlConfig.Option{
 		Port: 3306,
 	}
 	for _, fn := range fns {
@@ -88,14 +88,17 @@ func NewDB(fns ...mysqlCfg.Fn) (db *gorm.DB, err error) {
 	var (
 		sqlDB *sql.DB
 	)
-	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
+	var dbConfig = &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
-			// 使用单数表名，启用该选项，此时，`User` 的表名应该是 `t_user`,加
 			SingularTable: true,
+			TablePrefix:   config.TablePrefix,
 		},
-		//对于写操作（创建、更新、删除），为了确保数据的完整性，GORM 会将它们封装在事务内运行。但这会降低性能，你可以在初始化时禁用这种方式
 		SkipDefaultTransaction: true,
-	})
+	}
+	if config.Logger {
+		dbConfig.Logger = log.NewLog(config.LoggerConfig)
+	}
+	db, err = gorm.Open(mysql.Open(dsn), dbConfig)
 	if err != nil {
 		return
 	}
