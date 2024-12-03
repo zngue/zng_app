@@ -34,6 +34,7 @@ func NewError(code int, data any) error {
 	return &Error{
 		Code: code,
 		Data: data,
+		Msg:  "AutoErrMsg",
 	}
 }
 func NewErrorWithMsg(code int, data any, msg string) error {
@@ -46,7 +47,7 @@ func NewErrorWithMsg(code int, data any, msg string) error {
 func NewErrFn(fns ...ErrFn) error {
 	var opt = &ErrOption{
 		Code: 200,
-		Msg:  "获取成功",
+		Msg:  "AutoErrMsg",
 	}
 	for _, fn := range fns {
 		fn(opt)
