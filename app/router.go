@@ -23,9 +23,12 @@ func ApiRouter(fn RouterFn) gin.HandlerFunc {
 		data, err := fn(ctx)
 		if errors.Is(err, api.ErrParameter) {
 			api.DataWithErr(ctx, err, data, api.Code(api.ErrorParameter))
+			return
 		} else {
 			api.DataWithErr(ctx, err, data)
+			return
 		}
+
 	}
 }
 func NewRouter(items []IApiService) (routes []IRouter) {
