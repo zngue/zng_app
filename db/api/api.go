@@ -86,6 +86,31 @@ func DataWithErr(ctx *gin.Context, err error, data any, fns ...Fn) {
 		DataSuccess(ctx, fnArr...)
 	}
 }
+func DataApiWithErr(ctx *gin.Context, err error, data any, fns ...Fn) {
+	if err != nil {
+		var codeErr *Error
+		isCodeErr := errors.As(err, &codeErr)
+		if isCodeErr {
+			ctx.JSON(codeErr.Code, codeErr.Data)
+			return
+		} else {
+			DataError(ctx, err, fns...)
+			return
+		}
+	} else {
+		var fnArr []Fn
+		if data != nil {
+			fnArr = append(fnArr, Data(data))
+			if rs, ok := data.(*DataApi); ok && rs != nil {
+				ctx.JSON(rs.Code, rs.Data)
+				return
+			}
+		}
+		fnArr = append(fnArr, fns...)
+		DataSuccess(ctx, fnArr...)
+		return
+	}
+}
 
 // DataError Error /*
 func DataError(ctx *gin.Context, err error, fns ...Fn) {
@@ -93,12 +118,6 @@ func DataError(ctx *gin.Context, err error, fns ...Fn) {
 		Code: ErrorCode,
 		Msg:  ErrorMsg,
 		Data: nil,
-	}
-	var codeErr *Error
-	isCodeErr := errors.As(err, &codeErr)
-	if isCodeErr {
-		CodeError(ctx, codeErr)
-		return
 	}
 	if err != nil {
 		fns = append(fns, Err(err))
