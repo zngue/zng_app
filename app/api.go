@@ -46,3 +46,9 @@ func ApiFn(router *gin.RouterGroup, method MethodType, path string, fn RouterFn)
 func ApiAnyFn(router *gin.RouterGroup, path string, fn RouterFn) *Api {
 	return &Api{router: router, Path: path, Fn: fn}
 }
+func ApiGetFn(router *gin.RouterGroup, path string, fn RouterFn) *Api {
+	return &Api{router: router, Method: GET, Path: path, Fn: fn}
+}
+func ApiPostFn(router *gin.RouterGroup, path string, fn RouterFn) *Api {
+	return &Api{router: router, Method: POST, Path: path, Fn: fn}
+}
