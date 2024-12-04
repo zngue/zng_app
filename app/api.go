@@ -34,7 +34,11 @@ type Api struct {
 }
 
 func (r *Api) Router() {
-	r.router.Handle(string(r.Method), r.Path, ApiRouter(r.Fn))
+	if r.Method == "" {
+		r.router.Any(r.Path, ApiRouter(r.Fn))
+	} else {
+		r.router.Handle(string(r.Method), r.Path, ApiRouter(r.Fn))
+	}
 }
 func ApiFn(router *gin.RouterGroup, method MethodType, path string, fn RouterFn) *Api {
 	return &Api{router: router, Method: method, Path: path, Fn: fn}
