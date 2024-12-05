@@ -50,7 +50,7 @@ type Config struct {
 }
 
 var WriterConfigDefault = &Config{
-	Filename:   "nacos/log.log",
+	Filename:   "nacos/project.log",
 	MaxSize:    100,
 	MaxBackups: 3,
 	MaxAge:     30,
