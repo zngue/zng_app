@@ -8,6 +8,7 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/vo"
 	"net"
+	"os"
 )
 
 type Fn func(*Option) *Option
@@ -139,6 +140,7 @@ func (c *CenterOptions) clientServer() (err error) {
 }
 func (c *CenterOptions) RegisterInstance(params *RegisterInstanceParam) (err error) {
 	var flag bool
+	name, _ := os.Hostname()
 	flag, err = c.Server.RegisterInstance(vo.RegisterInstanceParam{
 		Ip:          getHostIp(), //使用本机ip
 		Port:        uint64(params.Port),
@@ -149,6 +151,10 @@ func (c *CenterOptions) RegisterInstance(params *RegisterInstanceParam) (err err
 		Enable:      true,
 		Healthy:     true,
 		Ephemeral:   true,
+		Metadata: map[string]string{
+			"port":     fmt.Sprintf("%d", params.Port),
+			"hostName": name,
+		},
 	})
 	if err != nil {
 		return
