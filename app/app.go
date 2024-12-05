@@ -13,6 +13,7 @@ import (
 )
 
 var AppName = "app"
+var SyncLogger = false
 
 type App struct {
 	httpSrv *http.Server
