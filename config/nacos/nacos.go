@@ -144,7 +144,7 @@ func (c *CenterOptions) RegisterInstance(params *RegisterInstanceParam) (err err
 	flag, err = c.Server.RegisterInstance(vo.RegisterInstanceParam{
 		Ip:          getHostIp(), //使用本机ip
 		Port:        uint64(params.Port),
-		ServiceName: params.ServiceName,
+		ServiceName: fmt.Sprintf("%s:%d", params.ServiceName, params.Port),
 		GroupName:   params.GroupName,
 		ClusterName: params.ClusterName,
 		Weight:      params.Weight,
