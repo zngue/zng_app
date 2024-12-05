@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
+	"github.com/zngue/zng_app/app"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -47,15 +48,17 @@ type Config struct {
 	Compress    bool
 	Level       LevelType
 	WriteSyncer io.Writer
+	ProjectName string
 }
 
 var WriterConfigDefault = &Config{
-	Filename:   "nacos/project.log",
-	MaxSize:    100,
-	MaxBackups: 3,
-	MaxAge:     30,
-	Compress:   true,
-	Level:      LevelDebug,
+	Filename:    "nacos/project.log",
+	ProjectName: app.AppName,
+	MaxSize:     100,
+	MaxBackups:  3,
+	MaxAge:      30,
+	Compress:    true,
+	Level:       LevelDebug,
 }
 
 func Default() *zap.Logger {
@@ -133,6 +136,7 @@ func (l *Log) Trace(_ context.Context, begin time.Time, fc func() (sql string, r
 	elapsed := time.Since(begin)
 	var data []zap.Field
 	sql, rows := fc()
+	data = append(data, zap.String("serviceName", app.AppName))
 	data = append(
 		data,
 		zap.String("sql", sql),

@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+var AppName = "app"
+
 type App struct {
 	httpSrv *http.Server
 	apps    []IApp
