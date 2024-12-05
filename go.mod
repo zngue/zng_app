@@ -5,6 +5,7 @@ go 1.23.2
 require (
 	github.com/dtm-labs/client v1.18.7
 	github.com/gin-gonic/gin v1.10.0
+	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lithammer/shortuuid/v3 v3.0.7
 	github.com/nacos-group/nacos-sdk-go v1.1.5
 	github.com/redis/go-redis/v9 v9.7.0
@@ -44,10 +45,12 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af // indirect
+	github.com/jonboulle/clockwork v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.7 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
+	github.com/lestrrat-go/strftime v1.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect

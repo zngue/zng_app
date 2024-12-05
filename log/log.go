@@ -3,6 +3,7 @@ package log
 import (
 	"context"
 	"fmt"
+	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -10,6 +11,7 @@ import (
 	"gorm.io/gorm/utils"
 	"io"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -68,13 +70,8 @@ func Default() *zap.Logger {
 		}()
 		return DefaultLogger
 	}
-	fileLog := zapcore.AddSync(&lumberjack.Logger{
-		Filename:   WriterConfigDefault.Filename,   // 日志文件路径
-		MaxSize:    WriterConfigDefault.MaxSize,    // 单个文件最大大小，单位为MB
-		MaxBackups: WriterConfigDefault.MaxBackups, // 保留的旧文件的最大个数
-		MaxAge:     WriterConfigDefault.MaxAge,     // 最大天数
-		Compress:   WriterConfigDefault.Compress,   // 是否压缩
-	})
+
+	fileLog := zapcore.AddSync(ZapLoggerWriter())
 	var wrSlice []zapcore.WriteSyncer
 	if WriterConfigDefault.WriteSyncer != nil {
 		wrSlice = append(wrSlice, zapcore.AddSync(WriterConfigDefault.WriteSyncer))
@@ -155,6 +152,19 @@ func (l *Log) Trace(_ context.Context, begin time.Time, fc func() (sql string, r
 		Default().Debug("debug", data...)
 	}
 }
+func ZapLoggerWriter() io.Writer {
+	filename := WriterConfigDefault.Filename
+	hook, err := rotatelogs.New(
+		strings.Replace(filename, ".log", "", -1)+"-%Y%m%d.log", // 没有使用go风格反人类的format格式
+		rotatelogs.WithLinkName(filename),
+		rotatelogs.WithMaxAge(time.Hour*24*time.Duration(WriterConfigDefault.MaxAge)),
+		rotatelogs.WithRotationTime(time.Hour*24),
+	)
+	if err != nil {
+		panic(err)
+	}
+	return hook
+}
 
 func NewLog(opt *Config) logger.Interface {
 	var l = new(Log)
@@ -163,4 +173,13 @@ func NewLog(opt *Config) logger.Interface {
 	}
 	l.LogLevel = logger.LogLevel(WriterConfigDefault.Level)
 	return l
+}
+func LumberjackLogger() io.Writer {
+	return &lumberjack.Logger{
+		Filename:   WriterConfigDefault.Filename,   // 日志文件路径
+		MaxSize:    WriterConfigDefault.MaxSize,    // 单个文件最大大小，单位为MB
+		MaxBackups: WriterConfigDefault.MaxBackups, // 保留的旧文件的最大个数
+		MaxAge:     WriterConfigDefault.MaxAge,     // 最大天数
+		Compress:   WriterConfigDefault.Compress,   // 是否压缩
+	}
 }
