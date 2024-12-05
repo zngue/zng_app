@@ -1,6 +1,7 @@
 package log
 
 import (
+	"fmt"
 	"github.com/go-resty/resty/v2"
 )
 
@@ -11,11 +12,18 @@ type SaveLog struct {
 func (s *SaveLog) Write(p []byte) (n int, err error) {
 	client := resty.New()
 	req := client.R()
-	//http://localhost:16666/v1/log/create
-	_, err = req.SetBody(string(p)).Post(s.Url)
-	if err != nil {
-		return
-	}
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println(r)
+			}
+		}()
+		//http://localhost:16666/v1/log/create
+		_, err = req.SetBody(string(p)).Post(s.Url)
+		if err != nil {
+			return
+		}
+	}()
 	return
 }
 func NewLogSave(url string) *SaveLog {

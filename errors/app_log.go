@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"fmt"
 	"github.com/zngue/zng_app"
 	"github.com/zngue/zng_app/log"
 )
@@ -10,7 +11,7 @@ func LogS(err error) {
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
-					log.Errorf("panic recover err:%v", r)
+					fmt.Println(r)
 				}
 			}()
 			log.Error(GetStackTrace(err))
