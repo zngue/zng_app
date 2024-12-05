@@ -143,13 +143,13 @@ func (l *Log) Trace(_ context.Context, begin time.Time, fc func() (sql string, r
 	case err != nil && l.LogLevel >= logger.Error:
 		data = append(data, zap.Error(err))
 		data = append(data, zap.String("file", utils.FileWithLineNum()))
-		Default().Error("Error", data...)
+		Default().Error("sql_info", data...)
 	case l.LogLevel >= logger.Warn:
-		Default().Warn("Warn", data...)
+		Default().Warn("sql_info", data...)
 	case l.LogLevel >= logger.Info:
-		Default().Info("Info", data...)
+		Default().Info("sql_info", data...)
 	default:
-		Default().Debug("debug", data...)
+		Default().Debug("sql_info", data...)
 	}
 }
 func ZapLoggerWriter() io.Writer {
