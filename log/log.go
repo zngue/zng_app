@@ -18,18 +18,6 @@ import (
 
 var DefaultLogger *zap.Logger
 
-type SaveLog struct {
-}
-
-func (s *SaveLog) Write(p []byte) (n int, err error) {
-	fmt.Println("SaveLog--Write", string(p))
-	return
-}
-
-func NewLogSave() *SaveLog {
-	return new(SaveLog)
-}
-
 type LevelType int8
 
 const (
