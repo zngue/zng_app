@@ -282,6 +282,33 @@ func (d *DB[T]) DeleteFn(data *DelRequest) (err error) {
 	return
 }
 
+// Execute 自定义模型
+func (d *DB[T]) Execute(fn DBFn) (err error) {
+	if fn == nil {
+		return
+	}
+	err = fn(d.Source)
+	return
+}
+
+type DBFn func(db *gorm.DB) (err error)
+
+// Transaction 事务提交
+func (d *DB[T]) Transaction(fn DBFn) (err error) {
+	begin := d.Source.Begin()
+	defer begin.Rollback()
+	if fn == nil {
+		err = errors.New("事务函数不能为空")
+		return
+	}
+	err = fn(begin)
+	if err != nil {
+		return
+	}
+	err = begin.Commit().Error
+	return
+}
+
 // NewDB 实例化 DB
 func NewDB[T any](db *gorm.DB) *DB[T] {
 	model := new(T)
