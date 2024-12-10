@@ -9,6 +9,7 @@ import (
 
 func logF(s string, i ...any) (data []zap.Field) {
 	begin := time.Now()
+	data = append(data, zap.String("serviceName", zng_app.AppName))
 	data = append(data, zap.String("elapsed", begin.Format("2006-01-02 15:04:05")))
 	data = append(data, zap.Any("log_data", fmt.Sprintf(s, i...)))
 	return
