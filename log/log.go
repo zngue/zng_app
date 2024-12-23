@@ -40,7 +40,7 @@ type Config struct {
 }
 
 var WriterConfigDefault = &Config{
-	Filename:    "nacos/project.log",
+	Filename:    fmt.Sprintf("%s/nacos/project.log", zng_app.AppName),
 	ProjectName: zng_app.AppName,
 	MaxSize:     100,
 	MaxBackups:  3,

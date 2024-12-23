@@ -7,6 +7,7 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
 	"github.com/nacos-group/nacos-sdk-go/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/vo"
+	"github.com/zngue/zng_app"
 	"net"
 	"os"
 )
@@ -87,8 +88,8 @@ func DataWithTimeoutMs(timeoutMs uint64) Fn {
 func NewOption(fns ...Fn) (opt *Option) {
 	opt = &Option{
 		NamespaceId:    "develop",
-		LogDir:         "nacos/log",
-		CacheDir:       "nacos/cache",
+		LogDir:         fmt.Sprintf("%s/nacos/log", zng_app.AppName),
+		CacheDir:       fmt.Sprintf("%s/nacos/cache", zng_app.AppName),
 		TimeoutMs:      5000,
 		AppendToStdout: false,
 		Port:           8848,
