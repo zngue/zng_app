@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -12,25 +11,8 @@ import (
 	"time"
 )
 
-type App struct {
-	httpSrv *http.Server
-	apps    []IApp
-	routers []IRouter
-}
+type Fn func() (*App, func(), error)
 
-func NewHttpServer(port int, handler http.Handler) *http.Server {
-	return &http.Server{
-		Addr:    fmt.Sprintf(":%d", port),
-		Handler: handler,
-	}
-}
-func NewApp(server *http.Server, routers []IRouter, apps []IApp) *App {
-	return &App{
-		httpSrv: server,
-		routers: routers,
-		apps:    apps,
-	}
-}
 func (a *App) Run() (err error) {
 	for _, r := range a.routers {
 		r.Router()
@@ -42,10 +24,8 @@ func (a *App) Run() (err error) {
 		}
 	}()
 	go func() {
-		for _, app := range a.apps {
-			if appErr := app.Run(); appErr != nil {
-				panic(appErr)
-			}
+		for _, app := range a.cron {
+			app.Run()
 		}
 	}()
 	log.Printf("start app running")
@@ -68,31 +48,12 @@ func (a *App) Stop(ctx context.Context) error {
 		}
 	}()
 	go func() {
-		if len(a.apps) > 0 {
+		if len(a.cron) > 0 {
 			// 关闭其他服务
-			for _, app := range a.apps {
-				if err := app.Stop(ctx); err != nil {
-					log.Println(err)
-					continue
-				}
+			for _, app := range a.cron {
+				app.Stop()
 			}
 		}
 	}()
 	return nil
-}
-
-func NewAppRunner(port int32, fn Fn) (err error) {
-	var (
-		run     *App
-		cleanup func()
-	)
-	run, cleanup, err = fn()
-	if err != nil {
-		return
-	}
-	defer cleanup()
-	fmt.Println(fmt.Sprintf("http://127.0.0.1:%d", port))
-	fmt.Println(fmt.Sprintf("http://localhost:%d", port))
-	err = run.Run()
-	return
 }

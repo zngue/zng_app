@@ -1,6 +1,8 @@
-package app
+package types
 
-import "context"
+import (
+	"context"
+)
 
 type IApp interface {
 	Run() (err error)
