@@ -4,11 +4,11 @@ type ICron interface {
 	Run()
 	Stop()
 }
-type IAppServer struct{}
+type ICronServer struct{}
 
-func (IAppServer) Run() {
-	panic("implement me IAppServer.Run")
+func (ICronServer) Run() {
+	panic("implement me ICronServer.Run")
 }
-func (IAppServer) Stop() {
-	panic("implement me IAppServer.Stop")
+func (ICronServer) Stop() {
+	panic("implement me ICronServer.Stop")
 }
