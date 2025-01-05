@@ -18,10 +18,10 @@ const (
 	GET  MethodType = http.MethodGet
 )
 
-func (a *ApiService) Register() []*Api {
+func (a *ApiService) Register() []IRouter {
 	panic("implement me")
 }
-func ApiServiceFn(dataItems ...*Api) []*Api {
+func ApiServiceFn(dataItems ...IRouter) []IRouter {
 	return dataItems
 }
 
@@ -32,16 +32,16 @@ func (r *Api) Router() {
 		r.router.Handle(string(r.Method), r.Path, ApiRouter(r.Fn))
 	}
 }
-func ApiFn(router *gin.RouterGroup, method MethodType, path string, fn Fn) *Api {
+func ApiFn(router *gin.RouterGroup, method MethodType, path string, fn Fn) IRouter {
 	return &Api{router: router, Method: method, Path: path, Fn: fn}
 }
-func ApiAnyFn(router *gin.RouterGroup, path string, fn Fn) *Api {
+func ApiAnyFn(router *gin.RouterGroup, path string, fn Fn) IRouter {
 	return &Api{router: router, Path: path, Fn: fn}
 }
-func ApiGetFn(router *gin.RouterGroup, path string, fn Fn) *Api {
+func ApiGetFn(router *gin.RouterGroup, path string, fn Fn) IRouter {
 	return &Api{router: router, Method: GET, Path: path, Fn: fn}
 }
-func ApiPostFn(router *gin.RouterGroup, path string, fn Fn) *Api {
+func ApiPostFn(router *gin.RouterGroup, path string, fn Fn) IRouter {
 	return &Api{router: router, Method: POST, Path: path, Fn: fn}
 }
 

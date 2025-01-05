@@ -6,6 +6,9 @@ type IRouter interface {
 	Router()
 }
 
+type ApiRouterService interface {
+}
+
 type Api struct {
 	router *gin.RouterGroup
 	Method MethodType
@@ -14,15 +17,10 @@ type Api struct {
 	IRouterServer
 }
 type IApiService interface {
-	Register() []*Api
+	Register() []IRouter
 }
 type ApiService struct {
 }
 type Fn func(ctx *gin.Context) (data any, err error)
 type IRouterServer struct {
-}
-type GroupRouter[T any] *gin.RouterGroup
-
-func GroupRouterFn[T any](path string, api *gin.RouterGroup) GroupRouter[T] {
-	return api.Group(path)
 }
