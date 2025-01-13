@@ -1,0 +1,20 @@
+protoc --plugin=protoc-gen-custom=./abc.exe --custom_out=.  app/conf/conf.proto
+
+protoc --proto_path=./third  --proto_path=./proto  --go_out=. --go-grpc_out=.  proto/abc.proto
+
+
+
+
+
+protoc --proto_path=./third   --plugin=protoc-gen-custom=./http_rpc.exe --custom_out=.  proto/abc.proto
+
+protoc --proto_path=./third  --proto_path=./proto --plugin=protoc-gen-custom=./http_rpc.exe --custom_out=./api  proto/abc.proto
+
+
+go build -o http_rpc.exe .\cmd\http_rpc
+
+
+protoc --proto_path=./third  --proto_path=./api --plugin=protoc-gen-custom=./http_rpc.exe --custom_out=.  api/test/v1/test.proto
+
+
+protoc --proto_path=./third  --proto_path=./api --go_out=. api/test/v1/test.proto
