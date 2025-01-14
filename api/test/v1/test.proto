@@ -3,6 +3,7 @@ syntax = "proto3";
 package api.test.v1;
 option go_package = "api/test/v1;v1";
 import "google/api/annotations.proto";
+import "validate/validate.proto";
 
 service Test {
   rpc Info (GetTestRequest) returns (GetTestReply) {
@@ -15,12 +16,19 @@ service Test {
       get: "/v1/test/list"
     };
   }
+  rpc Create (GetTestRequest) returns (GetTestReply) {
+    option (google.api.http) = {
+      post: "/v1/test/create"
+      body: "*"
+    };
+  }
 }
 message GetListTestRequest{
   string name = 1;
 }
 message GetTestRequest {
-  string name = 1;
+  string name = 1[(validate.rules).string.min_len = 1];
+  int32 status = 2 [(validate.rules).int32={in:[0,1,2,3,4]}];
 }
 message GetTestReply {
   string message = 1;
