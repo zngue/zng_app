@@ -28,14 +28,7 @@ protoc --proto_path=./third  --proto_path=./api --plugin=protoc-gen-custom=proto
 protoc --proto_path=./third  --proto_path=./api --plugin=protoc-gen-validate=protoc-gen-validate --custom_out=.  api/test/v1/test.proto
 protoc --proto_path=./third  --proto_path=./api --plugin=protoc-gen-validate.exe  --go_out=. --validate_out=lang=go:.   api/test/v1/test.proto
 
-
 protoc --proto_path=./third  --proto_path=. --plugin=protoc-gen-gin-http.exe --go_out=.  api/test/v1/test.proto
-
 protoc --proto_path=./third  --proto_path=.  --go_out=. --go-grpc_out=.   api/test/v1/test.proto
-
-
-protoc --proto_path=./third  --proto_path=. --plugin=protoc-gen-custom=protoc-gen-gin-http.exe  --custom_out=.  api/test/v1/test.proto
-
-
-
-protoc --proto_path=./third  --proto_path=. --plugin=protoc-gen-custom=G:\go\bin\gin-http.exe  --custom_out=.  api/test/v1/test.proto
+protoc --proto_path=./third --go_opt=paths=source_relative  --proto_path=. --plugin=protoc-gen-custom=protoc-gen-gin-http.exe  --custom_out=abc  api/test/v1/test.proto
+protoc --proto_path=./third  --proto_path=. --plugin=protoc-gen-custom=protoc-gen-gin-http.exe   --custom_out=.  api/test/v1/test.proto
