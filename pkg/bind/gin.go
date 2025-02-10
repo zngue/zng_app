@@ -43,7 +43,7 @@ func GetOperation(ctx context.Context) (operation string, err error) {
 	return
 }
 
-type MiddlewareFn = func(ctx context.Context) error
+type MiddlewareFn = func(ctx context.Context) (err error)
 
 var middlewares []MiddlewareFn
 
