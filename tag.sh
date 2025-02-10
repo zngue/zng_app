@@ -1,13 +1,15 @@
 #!/bin/bash
 
 
+go mod tidy
+
 git add .
 
 git commit -m "update"
 git push
 sleep 3
 echo "推送完成 开始打标签"
-version=${1:-"v1.0.4"}
+version=${1:-"v1.0.5"}
 git tag -d "${version}"
 git push origin :refs/tags/"${version}"
 msg=${2:-"Release ${version} 新增日志项目"}

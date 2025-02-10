@@ -10,6 +10,7 @@ require (
 	github.com/nacos-group/nacos-sdk-go v1.1.5
 	github.com/redis/go-redis/v9 v9.7.0
 	go.uber.org/zap v1.27.0
+	golang.org/x/net v0.28.0
 	golang.org/x/sync v0.10.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -54,7 +55,6 @@ require (
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/arch v0.8.0 // indirect
 	golang.org/x/crypto v0.26.0 // indirect
-	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/sys v0.23.0 // indirect
 	golang.org/x/text v0.19.0 // indirect
 	google.golang.org/protobuf v1.34.1 // indirect

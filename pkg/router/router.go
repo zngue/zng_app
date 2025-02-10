@@ -60,3 +60,8 @@ func ApiRouter(fn Fn) gin.HandlerFunc {
 		}
 	}
 }
+func ApiStreamRouter(fn Fn) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		
+	}
+}
