@@ -42,18 +42,3 @@ func GetOperation(ctx context.Context) (operation string, err error) {
 	err = errors.New("operation is not exist")
 	return
 }
-
-type MiddlewareFn = func(ctx context.Context) (err error)
-
-var middlewares []MiddlewareFn
-
-func SetMiddleWires(fns ...MiddlewareFn) {
-	middlewares = fns
-	return
-}
-func GetMiddleWires() []MiddlewareFn {
-	return middlewares
-}
-func ClearMiddleWires() {
-	middlewares = nil
-}
