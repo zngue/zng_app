@@ -14,9 +14,6 @@ import (
 type Fn func() (*App, func(), error)
 
 func (a *App) Run() (err error) {
-	for _, r := range a.routers {
-		r.Router()
-	}
 	go func() {
 		httpErr := a.httpSrv.ListenAndServe()
 		if httpErr != nil && !errors.Is(httpErr, http.ErrServerClosed) {

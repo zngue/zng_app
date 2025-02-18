@@ -16,3 +16,7 @@ func (IAppServer) Run() (err error) {
 func (IAppServer) Stop(ctx context.Context) error {
 	panic("implement me IAppServer.Stop")
 }
+
+type Register interface {
+	Register()
+}

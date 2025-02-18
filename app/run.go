@@ -11,7 +11,6 @@ import (
 type App struct {
 	httpSrv *http.Server
 	cron    []cron.ICron
-	routers []router.IRouter
 	Port    int32
 }
 
@@ -26,10 +25,9 @@ func NewRouter(items []router.IApiService) (routes []router.IRouter) {
 	}
 	return
 }
-func NewApp(server *http.Server, routers []router.IRouter, cron []cron.ICron) *App {
+func NewApp(server *http.Server, cron []cron.ICron) *App {
 	return &App{
 		httpSrv: server,
-		routers: routers,
 		cron:    cron,
 	}
 }
