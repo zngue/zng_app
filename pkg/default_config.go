@@ -67,17 +67,14 @@ func NewConfig(fns ...ConfigFn) (config *DefaultConfig, err error) {
 	if host != "" {
 		config.Host = host
 	}
-	log.Info(fmt.Sprintf("_HOST,Host:%s", config.Host))
 	var dbGroupName = os.Getenv("DB_GROUP")
 	if dbGroupName != "" {
 		config.Group = dbGroupName
 	}
-	log.Info(fmt.Sprintf("DB_GROUP,Group:%s", config.Group))
 	var namespace = os.Getenv("NAMESPACE")
 	if namespace != "" {
 		config.Namespace = namespace
 	}
-	log.Info(fmt.Sprintf("_NAMESPACE,Namespace:%s", config.Namespace))
 	var port = os.Getenv("HTTP_PORT")
 	if port != "" {
 		var httpPort, _ = strconv.Atoi(port)
@@ -85,12 +82,10 @@ func NewConfig(fns ...ConfigFn) (config *DefaultConfig, err error) {
 			config.HttpPort = httpPort
 		}
 	}
-	log.Info(fmt.Sprintf("HttpPort:%d", config.HttpPort))
 	database := os.Getenv("DB_DATABASE")
 	if database != "" {
 		config.DBDatabase = database
 	}
-	log.Info(fmt.Sprintf("DB_DATABASE,DBDatabase:%s", config.DBDatabase))
 	for _, fn := range fns {
 		fn(config)
 	}
@@ -106,6 +101,5 @@ func NewConfig(fns ...ConfigFn) (config *DefaultConfig, err error) {
 		err = fmt.Errorf("NAMESPACE 不能为空")
 		return
 	}
-	log.Info(fmt.Sprintf("NewConfig,config:%+v", config))
 	return
 }
