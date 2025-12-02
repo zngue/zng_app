@@ -3,6 +3,11 @@ package log
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
+	"strings"
+	"time"
+
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/zngue/zng_app"
 	"go.uber.org/zap"
@@ -10,10 +15,6 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/utils"
-	"io"
-	"os"
-	"strings"
-	"time"
 )
 
 var DefaultLogger *zap.Logger
@@ -40,7 +41,7 @@ type Config struct {
 }
 
 var WriterConfigDefault = &Config{
-	Filename:    fmt.Sprintf("/project.log"),
+	Filename:    "/project.log",
 	ProjectName: zng_app.AppName,
 	MaxSize:     100,
 	MaxBackups:  3,
@@ -75,8 +76,7 @@ func Default() *zap.Logger {
 	writeSyncer := zapcore.NewMultiWriteSyncer(wrSlice...)
 	encoderConfig := zap.NewProductionEncoderConfig()
 	level := zap.NewAtomicLevelAt(zap.InfoLevel)
-	var core zapcore.Core
-	core = zapcore.NewCore(
+	var core = zapcore.NewCore(
 		zapcore.NewJSONEncoder(encoderConfig),
 		writeSyncer,
 		level,
