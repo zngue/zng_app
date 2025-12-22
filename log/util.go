@@ -2,9 +2,10 @@ package log
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/zngue/zng_app"
 	"go.uber.org/zap"
-	"time"
 )
 
 func logF(s string, i ...any) (data []zap.Field) {
@@ -21,15 +22,7 @@ func log(i ...any) (data []zap.Field) {
 	}
 	data = append(data, zap.String("serviceName", zng_app.AppName))
 	data = append(data, zap.String("elapsed", begin.Format("2006-01-02 15:04:05")))
-	if len(i) > 0 {
-		for index, val := range i {
-			if index == 0 {
-				data = append(data, zap.Any(fmt.Sprintf("log_data"), val))
-			} else {
-				data = append(data, zap.Any(fmt.Sprintf("log_data_%d", index), val))
-			}
-		}
-	}
+	data = append(data, zap.Any("log_data", i))
 	return
 }
 func Errorf(s string, i ...any) {

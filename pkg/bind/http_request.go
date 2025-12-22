@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/url"
 	"reflect"
+	"strconv"
+	"strings"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
@@ -192,46 +194,89 @@ func (c *Client) GET(ctx context.Context, path string, query any, v any) (err er
 }
 func StructToURLValues(v any) url.Values {
 	values := url.Values{}
-	parseToURLValues(reflect.ValueOf(v), values)
+	EncodeStruct(v, &values)
 	return values
 }
 
-func parseToURLValues(val reflect.Value, out url.Values) {
-	if val.Kind() == reflect.Pointer {
-		if val.IsNil() {
+func EncodeStruct(obj any, values *url.Values) {
+	v := reflect.ValueOf(obj)
+	// 处理指针
+	if v.Kind() == reflect.Ptr {
+		if v.IsNil() {
 			return
 		}
-		val = val.Elem()
+		v = v.Elem()
 	}
-	if val.Kind() != reflect.Struct {
+	// 必须是结构体
+	if v.Kind() != reflect.Struct {
 		return
 	}
-	t := val.Type()
-	for i := 0; i < val.NumField(); i++ {
-		field := val.Field(i)
-		fType := t.Field(i)
-
-		// ---- 取 json tag ----
-		jsonTag := fType.Tag.Get("json")
+	t := v.Type()
+	for i := 0; i < v.NumField(); i++ {
+		field := t.Field(i)
+		fieldValue := v.Field(i)
+		jsonTag := field.Tag.Get("json")
 		if jsonTag == "" || jsonTag == "-" {
 			continue
 		}
-		key := jsonTag
-		// 匿名字段：直接展开，不使用 tag
-		if fType.Anonymous {
-			parseToURLValues(field, out)
+		jsonKey := strings.Split(jsonTag, ",")[0]
+		if jsonKey == "" {
 			continue
 		}
-		switch field.Kind() {
-		case reflect.Struct:
-			// 嵌套结构体提升到顶层
-			parseToURLValues(field, out)
-		case reflect.Slice, reflect.Array:
-			for j := 0; j < field.Len(); j++ {
-				out.Add(key, fmt.Sprintf("%v", field.Index(j).Interface()))
+		// 处理指针
+		if fieldValue.Kind() == reflect.Ptr {
+			if fieldValue.IsNil() {
+				continue
 			}
-		default:
-			out.Add(key, fmt.Sprintf("%v", field.Interface()))
+			fieldValue = fieldValue.Elem()
+		}
+		ValuesData(jsonKey, fieldValue, values)
+	}
+}
+func ValuesData(key string, fieldValue reflect.Value, values *url.Values) {
+	switch fieldValue.Kind() {
+	case reflect.String:
+		str := fieldValue.String()
+		if str != "" {
+			values.Add(key, str)
+		}
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		values.Add(key, strconv.FormatInt(fieldValue.Int(), 10))
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		values.Add(key, strconv.FormatUint(fieldValue.Uint(), 10))
+	case reflect.Float32, reflect.Float64:
+		values.Add(key, strconv.FormatFloat(fieldValue.Float(), 'f', -1, 64))
+	case reflect.Bool:
+		values.Add(key, strconv.FormatBool(fieldValue.Bool()))
+	case reflect.Slice, reflect.Array:
+		if fieldValue.Len() == 0 {
+			return
+		}
+		for i := 0; i < fieldValue.Len(); i++ {
+			elem := fieldValue.Index(i)
+			if elem.Kind() == reflect.Ptr {
+				if elem.IsNil() {
+					continue
+				}
+				elem = elem.Elem()
+			}
+			ValuesData(key, elem, values)
+		}
+	case reflect.Map:
+		if fieldValue.Len() == 0 {
+			return
+		}
+		for _, keyValue := range fieldValue.MapKeys() {
+			mapValue := fieldValue.MapIndex(keyValue)
+			var mapKey = keyValue.String()
+			ValuesData(mapKey, mapValue, values)
+		}
+	case reflect.Struct: // 递归处理嵌套结构体，但不添加前缀
+		EncodeStruct(fieldValue.Interface(), values)
+	case reflect.Interface: // 处理 interface{} 类型
+		if !fieldValue.IsNil() {
+			v := reflect.ValueOf(fieldValue.Interface())
+			ValuesData(key, v, values)
 		}
 	}
 }
