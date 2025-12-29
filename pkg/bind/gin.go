@@ -1,6 +1,8 @@
 package bind
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/zngue/zng_app/errors"
@@ -8,7 +10,8 @@ import (
 )
 
 func Bind(ctx *gin.Context, v any) (err error) {
-	if ctx.Request.Method == "GET" {
+	err = binding.ProtoBuf.Bind(ctx.Request, v)
+	if ctx.Request.Method == http.MethodGet {
 		query := ctx.Request.URL.Query()
 		err = binding.MapFormWithTag(v, query, "json")
 		if err != nil {

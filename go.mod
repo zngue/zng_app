@@ -5,6 +5,7 @@ go 1.23.2
 require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-resty/resty/v2 v2.7.0
+	github.com/google/uuid v1.6.0
 	github.com/google/wire v0.6.0
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/nacos-group/nacos-sdk-go v1.1.5

@@ -21,18 +21,21 @@ type ClientServer interface {
 	GET(ctx context.Context, path string, in any, v any) error
 }
 type Client struct {
-	BaseURL string
-	Version string
-	Header  map[string]string // 请求头
+	BaseURL       string
+	Version       string
+	Header        map[string]string // 请求头
+	ServiceName   string
+	Authorization string
 }
 type ClientOption struct {
-	ServerName string            // 服务名称
-	Port       string            // 服务端口
-	Version    string            // 服务版本
-	Header     map[string]string // 请求头
-	IsNacos    bool              // 是否使用nacos
-	GroupName  string            // nacos分组
-	BaseUrl    string
+	ServerName    string            // 服务名称
+	Port          string            // 服务端口
+	Version       string            // 服务版本
+	Header        map[string]string // 请求头
+	IsNacos       bool              // 是否使用nacos
+	GroupName     string            // nacos分组
+	BaseUrl       string
+	Authorization string
 }
 type ClientOptionFn func(rs *ClientOption)
 
@@ -97,29 +100,27 @@ func NacosServer(srv naming_client.INamingClient, serviceName, groupName string)
 }
 func NewClientServer(option *ClientOption, fns ...ClientOptionFn) (cli ClientServer, err error) {
 	if option == nil {
-		option = &ClientOption{
-			Version: "v2",
-		}
+		option = &ClientOption{}
 	}
 	for _, fn := range fns {
 		fn(option)
 	}
 	cli = &Client{
-		BaseURL: option.BaseUrl,
-		Version: option.Version,
-		Header:  option.Header,
+		BaseURL:       option.BaseUrl,
+		Version:       option.Version,
+		Header:        option.Header,
+		ServiceName:   option.ServerName,
+		Authorization: option.Authorization,
 	}
 	if option.BaseUrl == "" {
-		err = errors.New("nacos server url is empty")
+		err = errors.New("BaseUrl url is empty")
 		return
 	}
 	return
 }
 
 func NewNacosClientServer(srv naming_client.INamingClient, serviceName, groupName string, fns ...ClientOptionFn) (cli ClientServer, err error) {
-	var option = &ClientOption{
-		Version: "v1",
-	}
+	var option = &ClientOption{}
 	option.BaseUrl, err = NacosServer(srv, serviceName, groupName)
 	if err != nil {
 		return
@@ -128,9 +129,11 @@ func NewNacosClientServer(srv naming_client.INamingClient, serviceName, groupNam
 		fn(option)
 	}
 	cli = &Client{
-		BaseURL: option.BaseUrl,
-		Version: option.Version,
-		Header:  option.Header,
+		BaseURL:       option.BaseUrl,
+		Version:       option.Version,
+		Header:        option.Header,
+		ServiceName:   option.ServerName,
+		Authorization: option.Authorization,
 	}
 	if option.BaseUrl == "" {
 		err = errors.New("nacos server url is empty")
@@ -145,11 +148,9 @@ func NewNacosClientServer(srv naming_client.INamingClient, serviceName, groupNam
 //
 // ----------------------
 func (c *Client) POST(ctx context.Context, path string, in any, v any) (err error) {
-	client := resty.New()
-	request := client.R().SetBody(in)
-	request = request.SetContext(ctx)
+	var request = c.RequestCommon(ctx)
 	var rs *resty.Response
-	var url = fmt.Sprintf("%s/%s/%s", c.BaseURL, c.Version, path)
+	var url = fmt.Sprintf("%s%s", c.BaseURL, path)
 	rs, err = request.Post(url)
 	if err != nil {
 		return
@@ -166,17 +167,37 @@ func (c *Client) POST(ctx context.Context, path string, in any, v any) (err erro
 	return nil
 }
 
-// GET 请求方法
-func (c *Client) GET(ctx context.Context, path string, query any, v any) (err error) {
-	params := StructToURLValues(query)
+func (c *Client) RequestCommon(ctx context.Context) *resty.Request {
 	client := resty.New()
 	request := client.R()
 	request = request.SetContext(ctx)
+	var udid = FromUDIDContext(ctx)
+	if udid == "" {
+		udid = OriginUDID()
+	}
+	if c.ServiceName != "" {
+		request = request.SetHeader(RequestIDServer, c.ServiceName)
+	}
+	if c.Version != "" {
+		request = request.SetHeader(RequestIDVersion, c.Version)
+	}
+	if c.Authorization != "" {
+		request = request.SetHeader(RequestIDAuthorization, c.Authorization)
+	}
+	request = request.SetHeader(RequestIDKey, udid)
+	return request
+}
+
+// GET 请求方法
+func (c *Client) GET(ctx context.Context, path string, query any, v any) (err error) {
+	params := StructToURLValues(query)
+	var request = c.RequestCommon(ctx)
 	if len(params) > 0 {
 		request = request.SetQueryParamsFromValues(params)
 	}
-	var url = fmt.Sprintf("%s/%s/%s", c.BaseURL, c.Version, path)
+	var url = fmt.Sprintf("%s%s", c.BaseURL, path)
 	var rs *resty.Response
+	request.URL = url
 	rs, err = request.Get(url)
 	if err != nil {
 		return
