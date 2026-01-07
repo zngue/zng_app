@@ -175,14 +175,12 @@ func (c *Client) RequestCommon(ctx context.Context) *resty.Request {
 	if udid == "" {
 		udid = OriginUDID()
 	}
-	if c.ServiceName != "" {
-		request = request.SetHeader(RequestIDServer, c.ServiceName)
-	}
+	request = request.SetHeader(RequestFromService, FromServerLocalContext(ctx))
 	if c.Version != "" {
-		request = request.SetHeader(RequestIDVersion, c.Version)
+		request = request.SetHeader(RequestVersion, c.Version)
 	}
 	if c.Authorization != "" {
-		request = request.SetHeader(RequestIDAuthorization, c.Authorization)
+		request = request.SetHeader(RequestAuthorization, c.Authorization)
 	}
 	request = request.SetHeader(RequestIDKey, udid)
 	return request

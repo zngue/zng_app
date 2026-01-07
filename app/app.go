@@ -17,7 +17,7 @@ func (a *App) Run() (err error) {
 	go func() {
 		httpErr := a.httpSrv.ListenAndServe()
 		if httpErr != nil && !errors.Is(httpErr, http.ErrServerClosed) {
-			panic(err)
+			panic(httpErr) // 修复：这里应该是httpErr而不是err
 		}
 	}()
 	go func() {
@@ -26,7 +26,7 @@ func (a *App) Run() (err error) {
 		}
 	}()
 	log.Printf("start app running")
-	quit := make(chan os.Signal)
+	quit := make(chan os.Signal, 1) // 修复：添加缓冲区大小为1
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Printf("shutdown app")
@@ -39,18 +39,16 @@ func (a *App) Run() (err error) {
 	return
 }
 func (a *App) Stop(ctx context.Context) error {
-	go func() {
-		if err := a.httpSrv.Shutdown(ctx); err != nil {
-			panic(err)
+	// 修复：移除goroutine，直接执行关闭操作
+	if err := a.httpSrv.Shutdown(ctx); err != nil {
+		return err
+	}
+
+	if len(a.cron) > 0 {
+		// 关闭其他服务
+		for _, app := range a.cron {
+			app.Stop()
 		}
-	}()
-	go func() {
-		if len(a.cron) > 0 {
-			// 关闭其他服务
-			for _, app := range a.cron {
-				app.Stop()
-			}
-		}
-	}()
+	}
 	return nil
 }

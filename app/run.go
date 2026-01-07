@@ -2,10 +2,11 @@ package app
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/google/wire"
 	"github.com/zngue/zng_app/pkg/cron"
 	"github.com/zngue/zng_app/pkg/router"
-	"net/http"
 )
 
 type App struct {
@@ -25,6 +26,8 @@ func NewRouter(items []router.IApiService) (routes []router.IRouter) {
 	}
 	return
 }
+
+func Abc()
 func NewApp(server *http.Server, cron []cron.ICron) *App {
 	return &App{
 		httpSrv: server,
@@ -41,8 +44,8 @@ func NewAppRunner(port int32, fn Fn) (err error) {
 		return
 	}
 	defer cleanup()
-	fmt.Println(fmt.Sprintf("http://127.0.0.1:%d", port))
-	fmt.Println(fmt.Sprintf("http://localhost:%d", port))
+	fmt.Printf("http://127.0.0.1:%d\n", port)
+	fmt.Printf("http://localhost:%d\n", port)
 	err = run.Run()
 	return
 }

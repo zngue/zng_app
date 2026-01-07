@@ -8,16 +8,18 @@ import (
 	"github.com/zngue/zng_app"
 )
 
-type serverGinContextKey struct{}
-type udidGinContextKey struct{}
-type serverNameContextKey struct{}
-type operationGinContextKey struct{}
+type serverContextKey struct{}        //gin.Context
+type udidContextKey struct{}          //udid 参数
+type localServerContextKey struct{}   //本地服务
+type requestServerContextKey struct{} //请求来源服务
+type operationContextKey struct{}     //请求操作
 
-const OperationKey = "X-Request-Operation"
-const RequestIDKey = "X-Request-Id"
-const RequestIDServer = "X-Request-Server"
-const RequestIDVersion = "X-Request-Version"
-const RequestIDAuthorization = "X-Request-Authorization"
+const OperationKey = "X-Request-Operation"             //请求操作
+const RequestIDKey = "X-Request-Id"                    //请求ID
+const LocalServer = "X-Request-Local-Server"           //当前服务名
+const RequestVersion = "X-Request-Version"             //请求版本
+const RequestAuthorization = "X-Request-Authorization" //请求授权
+const RequestFromService = "X-Request-From-Service"    //请求来源服务
 
 func OriginUDID() string {
 	return uuid.NewString()
@@ -25,20 +27,42 @@ func OriginUDID() string {
 
 func NewServerContext(ctx context.Context, tr *gin.Context, operation string) context.Context {
 	ctx = NewUDIDContext(ctx, tr)
-	ctx = context.WithValue(ctx, serverGinContextKey{}, tr)               // 设置gin.Context
-	ctx = context.WithValue(ctx, serverNameContextKey{}, zng_app.AppName) // 设置服务名
-	ctx = context.WithValue(ctx, operationGinContextKey{}, operation)     // 设置操作
-	tr.Set(OperationKey, operation)
-	tr.Header(OperationKey, operation)
-	tr.Header(RequestIDServer, zng_app.AppName)
+	ctx = context.WithValue(ctx, serverContextKey{}, tr)                   // 设置gin.Context
+	ctx = context.WithValue(ctx, localServerContextKey{}, zng_app.AppName) // 设置服务名
+	ctx = context.WithValue(ctx, operationContextKey{}, operation)         // 设置操作
+	var fromService = TrHeaderFromServer(tr)
+	if fromService != "" {
+		ctx = context.WithValue(ctx, requestServerContextKey{}, fromService)
+	}
+	tr.Set(OperationKey, operation)         // 设置操作
+	tr.Header(OperationKey, operation)      // 设置当前操作在头部
+	tr.Header(LocalServer, zng_app.AppName) // 设置当前服务在头部
 	return ctx
 }
-func FromServerNameContext(ctx context.Context) (str string) {
-	str, _ = ctx.Value(serverNameContextKey{}).(string)
+
+// 获取头部请求来源
+func TrHeaderFromServer(tr *gin.Context) (str string) {
+	return tr.Request.Header.Get(RequestFromService)
+}
+
+// 获取来源服务
+func FromRequestService(ctx context.Context) (formService string) {
+	var (
+		ok bool
+	)
+	formService, ok = ctx.Value(requestServerContextKey{}).(string)
+	if ok {
+		return formService
+	}
+	return
+}
+
+func FromServerLocalContext(ctx context.Context) (str string) { //获取当前服务名
+	str, _ = ctx.Value(localServerContextKey{}).(string)
 	return
 }
 func FromServerContext(ctx context.Context) (tr *gin.Context, ok bool) {
-	tr, ok = ctx.Value(serverGinContextKey{}).(*gin.Context)
+	tr, ok = ctx.Value(localServerContextKey{}).(*gin.Context)
 	return
 }
 
@@ -46,7 +70,7 @@ func NewUDIDContext(ctx context.Context, tr *gin.Context) context.Context {
 	var udid = FromUDIDContext(ctx)
 	if udid == "" {
 		udid = uuid.NewString()
-		ctx = context.WithValue(ctx, udidGinContextKey{}, udid)
+		ctx = context.WithValue(ctx, udidContextKey{}, udid)
 		tr.Header(RequestIDKey, udid)
 	}
 	return ctx
@@ -55,30 +79,16 @@ func FromUDIDContext(ctx context.Context) (str string) {
 	var (
 		value any
 	)
-	value = ctx.Value(udidGinContextKey{})
+	value = ctx.Value(udidContextKey{})
 	str, _ = value.(string)
 	return
 }
 
-func SetOperationServerContext(tr *gin.Context, operation string) {
-	tr.Set(OperationKey, operation)
-}
-func OperationServerContext(tr *gin.Context) (str string) {
-	var (
-		ok    bool
-		value any
-	)
-	value, ok = tr.Get(OperationKey)
-	if ok {
-		str = value.(string)
-	}
-	return
-}
 func OperationByContext(ctx context.Context) (str string) {
 	var (
 		value any
 	)
-	value = ctx.Value(operationGinContextKey{})
+	value = ctx.Value(operationContextKey{})
 	str, _ = value.(string)
 	return
 }
