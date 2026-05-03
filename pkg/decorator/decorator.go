@@ -65,7 +65,6 @@ func Decorate[T any](impl T) (rs T, err error) {
 func createProxy(ifaceType reflect.Type, implValue reflect.Value, name string) reflect.Value {
 	numMethods := ifaceType.NumMethod()
 	methods := make([]reflect.StructField, numMethods)
-
 	for i := 0; i < numMethods; i++ {
 		m := ifaceType.Method(i)
 		methods[i] = reflect.StructField{
@@ -73,7 +72,6 @@ func createProxy(ifaceType reflect.Type, implValue reflect.Value, name string) r
 			Type: m.Type,
 		}
 	}
-
 	proxyType := reflect.StructOf(methods)
 	proxyValue := reflect.New(proxyType).Elem()
 

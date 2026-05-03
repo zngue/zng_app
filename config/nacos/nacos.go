@@ -2,13 +2,14 @@ package nacos
 
 import (
 	"fmt"
+	"net"
+	"os"
+
 	"github.com/nacos-group/nacos-sdk-go/clients"
 	"github.com/nacos-group/nacos-sdk-go/clients/config_client"
 	"github.com/nacos-group/nacos-sdk-go/clients/naming_client"
 	"github.com/nacos-group/nacos-sdk-go/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/vo"
-	"net"
-	"os"
 )
 
 type Fn func(*Option) *Option
