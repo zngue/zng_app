@@ -23,6 +23,7 @@ func WithServer(s server.Server) Option {
 
 func WithShutdownTimeout(d time.Duration) Option {
 	return func(a *App) {
+
 		a.timeout = d
 	}
 }
@@ -49,4 +50,9 @@ func (a *App) Run() error {
 	}
 	log.Println("app exited")
 	return nil
+}
+func NewAppRunner(opts ...Option) (err error) {
+	app := New(opts...)
+	err = app.Run()
+	return
 }
