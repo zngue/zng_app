@@ -10,13 +10,10 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-
-	"github.com/zngue/zng_app/app/server/middleware"
 )
 
 type HttpServer struct {
 	*http.Server
-	middlewareChain *middleware.MiddlewareChain
 }
 
 func (s *HttpServer) Start() error {
@@ -38,7 +35,6 @@ func (s *HttpServer) Start() error {
 	log.Println("HTTP server stopped")
 	return nil
 }
-
 func (s *HttpServer) Stop() error {
 	if s.Server == nil {
 		return fmt.Errorf("server is nil")
@@ -53,19 +49,7 @@ func (s *HttpServer) Stop() error {
 	return nil
 }
 
-func (s *HttpServer) MiddlewareChain() *middleware.MiddlewareChain {
-	return s.middlewareChain
-}
-
-type HttpServerOption func(*HttpServer)
-
-func WithMiddleware(chain *middleware.MiddlewareChain) HttpServerOption {
-	return func(s *HttpServer) {
-		s.middlewareChain = chain
-	}
-}
-
-func NewHttpServer(addr string, handler http.Handler, opts ...HttpServerOption) *HttpServer {
+func NewHttpServer(addr string, handler http.Handler) *HttpServer {
 	server := &http.Server{
 		Addr:         addr,
 		Handler:      handler,
@@ -74,8 +58,5 @@ func NewHttpServer(addr string, handler http.Handler, opts ...HttpServerOption) 
 		IdleTimeout:  30 * time.Second,
 	}
 	s := &HttpServer{Server: server}
-	for _, opt := range opts {
-		opt(s)
-	}
 	return s
 }
