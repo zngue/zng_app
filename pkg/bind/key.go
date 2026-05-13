@@ -92,16 +92,18 @@ func OperationByContext(ctx context.Context) (str string) {
 	str, _ = value.(string)
 	return
 }
-
-func Middleware(ctx context.Context, handler middleware.Handler) middleware.Handler {
+func MiddlewareHandle[R any](ctx context.Context, handler func(ctx context.Context) (R, error)) (R, error) {
 	if middleware.GetRegistry() == nil {
-		return handler
+		return handler(ctx)
 	}
-	operation, _ := ctx.Value(operationContextKey{}).(string)
-	return middleware.GetRegistry().Build(operation, handler)
-}
-
-func MiddlewareHandle(ctx context.Context, handler middleware.Handler) (any, error) {
-	h := Middleware(ctx, handler)
-	return h(ctx)
+	operation := OperationByContext(ctx)
+	wrapped := middleware.GetRegistry().Build(operation, func(ctx context.Context) (any, error) {
+		return handler(ctx)
+	})
+	out, err := wrapped(ctx)
+	if err != nil {
+		var zero R
+		return zero, err
+	}
+	return out.(R), nil
 }
