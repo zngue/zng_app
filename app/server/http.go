@@ -10,10 +10,20 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/zngue/zng_app/app/server/middleware"
 )
 
 type HttpServer struct {
 	*http.Server
+}
+
+type HttpServerOption func(*HttpServer)
+
+func WithMiddlewareRegistry(r *middleware.Registry) HttpServerOption {
+	return func(s *HttpServer) {
+		middleware.SetRegistry(r)
+	}
 }
 
 func (s *HttpServer) Start() error {
@@ -49,7 +59,11 @@ func (s *HttpServer) Stop() error {
 	return nil
 }
 
-func NewHttpServer(addr string, handler http.Handler) *HttpServer {
+func NewHttpServer(addr string, handler http.Handler, opts ...HttpServerOption) *HttpServer {
+	s := &HttpServer{}
+	for _, opt := range opts {
+		opt(s)
+	}
 	server := &http.Server{
 		Addr:         addr,
 		Handler:      handler,
@@ -57,6 +71,6 @@ func NewHttpServer(addr string, handler http.Handler) *HttpServer {
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  30 * time.Second,
 	}
-	s := &HttpServer{Server: server}
+	s.Server = server
 	return s
 }

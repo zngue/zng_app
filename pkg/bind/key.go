@@ -14,7 +14,6 @@ type udidContextKey struct{}          //udid 参数
 type localServerContextKey struct{}   //本地服务
 type requestServerContextKey struct{} //请求来源服务
 type operationContextKey struct{}     //请求操作
-type middlewareChainKey struct{}      //中间件链
 
 const OperationKey = "X-Request-Operation"             //请求操作
 const RequestIDKey = "X-Request-Id"                    //请求ID
@@ -27,20 +26,11 @@ func OriginUDID() string {
 	return uuid.NewString()
 }
 
-var globalMiddlewareChain *middleware.MiddlewareChain
-
-func SetMiddlewareChain(chain *middleware.MiddlewareChain) {
-	globalMiddlewareChain = chain
-}
-
 func NewServerContext(ctx context.Context, tr *gin.Context, operation string) context.Context {
 	ctx = NewUDIDContext(ctx, tr)
-	ctx = context.WithValue(ctx, serverContextKey{}, tr)                   // 设置gin.Context
-	ctx = context.WithValue(ctx, localServerContextKey{}, zng_app.AppName) // 设置服务名
-	ctx = context.WithValue(ctx, operationContextKey{}, operation)         // 设置操作
-	if globalMiddlewareChain != nil {
-		ctx = context.WithValue(ctx, middlewareChainKey{}, globalMiddlewareChain)
-	}
+	ctx = context.WithValue(ctx, serverContextKey{}, tr)
+	ctx = context.WithValue(ctx, localServerContextKey{}, zng_app.AppName)
+	ctx = context.WithValue(ctx, operationContextKey{}, operation)
 	var fromService = TrHeaderFromServer(tr)
 	if fromService != "" {
 		ctx = context.WithValue(ctx, requestServerContextKey{}, fromService)
@@ -50,12 +40,10 @@ func NewServerContext(ctx context.Context, tr *gin.Context, operation string) co
 	return ctx
 }
 
-// 获取头部请求来源
 func TrHeaderFromServer(tr *gin.Context) (str string) {
 	return tr.Request.Header.Get(RequestFromService)
 }
 
-// 获取来源服务
 func FromRequestService(ctx context.Context) (formService string) {
 	var (
 		ok bool
@@ -67,12 +55,13 @@ func FromRequestService(ctx context.Context) (formService string) {
 	return
 }
 
-func FromServerLocalContext(ctx context.Context) (str string) { //获取当前服务名
+func FromServerLocalContext(ctx context.Context) (str string) {
 	str, _ = ctx.Value(localServerContextKey{}).(string)
 	return
 }
+
 func FromServerContext(ctx context.Context) (tr *gin.Context, ok bool) {
-	tr, ok = ctx.Value(localServerContextKey{}).(*gin.Context)
+	tr, ok = ctx.Value(serverContextKey{}).(*gin.Context)
 	return
 }
 
@@ -85,6 +74,7 @@ func NewUDIDContext(ctx context.Context, tr *gin.Context) context.Context {
 	}
 	return ctx
 }
+
 func FromUDIDContext(ctx context.Context) (str string) {
 	var (
 		value any
@@ -103,10 +93,15 @@ func OperationByContext(ctx context.Context) (str string) {
 	return
 }
 
-func MiddlewareHandle(ctx context.Context) (context.Context, error) {
-	chain, ok := ctx.Value(middlewareChainKey{}).(*middleware.MiddlewareChain)
-	if !ok || chain == nil {
-		return ctx, nil
+func Middleware(ctx context.Context, handler middleware.Handler) middleware.Handler {
+	if middleware.GetRegistry() == nil {
+		return handler
 	}
-	return chain.Handle(ctx)
+	operation, _ := ctx.Value(operationContextKey{}).(string)
+	return middleware.GetRegistry().Build(operation, handler)
+}
+
+func MiddlewareHandle(ctx context.Context, handler middleware.Handler) (any, error) {
+	h := Middleware(ctx, handler)
+	return h(ctx)
 }
