@@ -44,7 +44,7 @@ func DataWithHeaders(headers map[string]string) ClientOptionFn {
 		response.Header = headers
 	}
 }
-func DataWithSeviceName(name string) ClientOptionFn {
+func DataWithServiceName(name string) ClientOptionFn {
 	return func(response *ClientOption) {
 		response.ServerName = name
 	}

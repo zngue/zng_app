@@ -10,11 +10,13 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/zngue/zng_app/app/server/middleware"
 )
 
-// HttpServer 封装 http.Server，提供优雅启动和关闭功能
 type HttpServer struct {
 	*http.Server
+	middlewareChain *middleware.MiddlewareChain
 }
 
 func (s *HttpServer) Start() error {
@@ -37,7 +39,6 @@ func (s *HttpServer) Start() error {
 	return nil
 }
 
-// Stop 优雅关闭 HTTP 服务器
 func (s *HttpServer) Stop() error {
 	if s.Server == nil {
 		return fmt.Errorf("server is nil")
@@ -52,8 +53,19 @@ func (s *HttpServer) Stop() error {
 	return nil
 }
 
-// NewHttpServer 创建新的 HttpServer 实例
-func NewHttpServer(addr string, handler http.Handler) *HttpServer {
+func (s *HttpServer) MiddlewareChain() *middleware.MiddlewareChain {
+	return s.middlewareChain
+}
+
+type HttpServerOption func(*HttpServer)
+
+func WithMiddleware(chain *middleware.MiddlewareChain) HttpServerOption {
+	return func(s *HttpServer) {
+		s.middlewareChain = chain
+	}
+}
+
+func NewHttpServer(addr string, handler http.Handler, opts ...HttpServerOption) *HttpServer {
 	server := &http.Server{
 		Addr:         addr,
 		Handler:      handler,
@@ -61,5 +73,9 @@ func NewHttpServer(addr string, handler http.Handler) *HttpServer {
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  30 * time.Second,
 	}
-	return &HttpServer{Server: server}
+	s := &HttpServer{Server: server}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
 }

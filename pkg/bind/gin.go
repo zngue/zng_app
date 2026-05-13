@@ -10,7 +10,6 @@ import (
 )
 
 func Bind(ctx *gin.Context, v any) (err error) {
-	err = binding.ProtoBuf.Bind(ctx.Request, v)
 	if ctx.Request.Method == http.MethodGet {
 		query := ctx.Request.URL.Query()
 		err = binding.MapFormWithTag(v, query, "json")

@@ -1,32 +1,36 @@
 package bind
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/zngue/zng_app/pkg/errors_ez"
 )
 
 // Response 统一响应结构
 type Response struct {
-	Code      MessageCode `json:"statusCode"`          // 业务状态码（0=成功）
-	Message   string      `json:"message"`             // 提示信息
-	Reason    string      `json:"reason,omitempty"`    // 错误原因
-	RequestId string      `json:"requestId,omitempty"` // 请求追踪ID
-	Data      any         `json:"data,omitempty"`      // 实际业务数据
+	Code      MessageCode         `json:"statusCode"`          // 业务状态码（0=成功）
+	Message   string              `json:"message"`             // 提示信息
+	Reason    string              `json:"reason,omitempty"`    // 错误原因
+	RequestId string              `json:"requestId,omitempty"` // 请求追踪ID
+	Data      any                 `json:"data,omitempty"`      // 实际业务数据
+	Err       []*errors_ez.EzInfo `json:"err,omitempty"`
 }
 
 type MessageCode int
 
 // 预定义业务状态码
 const (
-	CodeSuccess       MessageCode = 200   // 成功
-	ErrorParameter    MessageCode = 422   // 参数错误
-	ErrorResponse     MessageCode = 400   //响应错误
-	CodeParamError    MessageCode = 10001 // 参数错误
-	CodeUnauthorized  MessageCode = 10002 // 未授权
-	CodeForbidden     MessageCode = 10003 // 无权限
-	CodeNotFound      MessageCode = 10004 // 资源不存在
-	CodeInternalError MessageCode = 10500 // 内部错误
+	CodeSuccess               MessageCode = 200   // 成功
+	ErrorParameter            MessageCode = 422   // 参数错误
+	ErrorResponse             MessageCode = 400   //响应错误
+	ErrorUnauthorizedResponse MessageCode = 401   //响应错误
+	CodeParamError            MessageCode = 10001 // 参数错误
+	CodeUnauthorized          MessageCode = 10002 // 未授权
+	CodeForbidden             MessageCode = 10003 // 无权限
+	CodeNotFound              MessageCode = 10004 // 资源不存在
+	CodeInternalError         MessageCode = 10500 // 内部错误
 
 )
 
@@ -35,6 +39,8 @@ type ResOption struct {
 	Message string
 	Reason  string
 	Data    any
+	Err     error
+	infos   []*errors_ez.EzInfo
 }
 type ResOptionFn func(opt *ResOption)
 
@@ -56,7 +62,7 @@ func DataMsg(msg string) ResOptionFn {
 func DataReason(err error) ResOptionFn {
 	return func(opt *ResOption) {
 		if err != nil {
-			opt.Reason = err.Error()
+			opt.Err = err
 		}
 	}
 }
@@ -68,6 +74,8 @@ func (m MessageCode) String() string {
 		return "参数错误"
 	case ErrorResponse:
 		return "响应错误"
+	case ErrorUnauthorizedResponse:
+		return "未授权"
 	case CodeParamError:
 		return "参数错误"
 	case CodeUnauthorized:
@@ -83,7 +91,7 @@ func (m MessageCode) String() string {
 	}
 }
 
-func ApiDataWithErr[T any](ctx *gin.Context, err error, data T, fns ...ResOptionFn) {
+func ApiDataWithErr(ctx *gin.Context, err error, data any, fns ...ResOptionFn) {
 	if err != nil {
 		ApiErrorResponse(ctx, err, fns...)
 	} else {
@@ -92,10 +100,9 @@ func ApiDataWithErr[T any](ctx *gin.Context, err error, data T, fns ...ResOption
 }
 func ApiErrorResponse(ctx *gin.Context, err error, fns ...ResOptionFn) {
 	var res = &ResOption{
-		Code: CodeInternalError,
+		Code: ErrorResponse,
+		Err:  err,
 	}
-	fns = append(fns, DataCode(ErrorResponse))
-	fns = append(fns, DataReason(err))
 	for _, fn := range fns {
 		fn(res)
 	}
@@ -105,8 +112,8 @@ func ApiErrorResponse(ctx *gin.Context, err error, fns ...ResOptionFn) {
 func ApiCodeInternalError(ctx *gin.Context, err error, fns ...ResOptionFn) {
 	var res = &ResOption{
 		Code: CodeInternalError,
+		Err:  err,
 	}
-	res.Code = CodeInternalError
 	for _, fn := range fns {
 		fn(res)
 	}
@@ -128,9 +135,8 @@ func ApiCodeSuccess(ctx *gin.Context, data any, fns ...ResOptionFn) {
 
 func ApiErrorParameter(ctx *gin.Context, err error, fns ...ResOptionFn) {
 	var res = &ResOption{
-		Code: CodeSuccess,
+		Code: CodeParamError,
 	}
-	res.Code = CodeParamError
 	if err != nil {
 		fns = append(fns, DataReason(err))
 	}
@@ -141,9 +147,15 @@ func ApiErrorParameter(ctx *gin.Context, err error, fns ...ResOptionFn) {
 }
 
 func Execute(ctx *gin.Context, in *ResOption) {
-	var requestId string
-	if ctx.Writer != nil {
-		requestId = ctx.Writer.Header().Get(RequestIDKey)
+	requestId := ctx.Writer.Header().Get(RequestIDKey)
+	if in.Err != nil {
+		var ezErr *errors_ez.EzError
+		if errors.As(in.Err, &ezErr) {
+			in.infos = ezErr.ReasonMessage()
+			in.Message = ezErr.LastCustomReason()
+		} else {
+			in.Reason = in.Err.Error()
+		}
 	}
 	var out = &Response{
 		Code:      in.Code,
@@ -151,10 +163,12 @@ func Execute(ctx *gin.Context, in *ResOption) {
 		Reason:    in.Reason,
 		RequestId: requestId,
 		Data:      in.Data,
+		Err:       in.infos,
 	}
 	if out.Message == "" {
 		out.Message = out.Code.String()
 	}
+
 	ctx.JSON(http.StatusOK, out)
 }
 
