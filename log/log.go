@@ -50,19 +50,19 @@ var WriterConfigDefault = &Config{
 	Level:       LevelDebug,
 }
 
+func WriteSyncerInfo(logger *zap.Logger) {
+	if WriterConfigDefault.WriteSyncer != nil {
+		err := logger.Sync()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+}
 func Default() *zap.Logger {
 	if DefaultLogger != nil {
-		defer func() {
-			defer func(logger *zap.Logger) {
-				err := logger.Sync()
-				if err != nil {
-					fmt.Println(err)
-				}
-			}(DefaultLogger)
-		}()
+		defer WriteSyncerInfo(DefaultLogger)
 		return DefaultLogger
 	}
-
 	fileLog := zapcore.AddSync(ZapLoggerWriter())
 	var wrSlice []zapcore.WriteSyncer
 	if WriterConfigDefault.WriteSyncer != nil {
@@ -81,15 +81,8 @@ func Default() *zap.Logger {
 		writeSyncer,
 		level,
 	)
-	l := zap.New(core, zap.AddCallerSkip(1))
-	DefaultLogger = l
-	defer func(logger *zap.Logger) {
-		err := logger.Sync()
-		if err != nil {
-			fmt.Println(err)
-		}
-	}(l)
-	return l
+	DefaultLogger = zap.New(core, zap.AddCallerSkip(1))
+	return DefaultLogger
 }
 
 type Log struct {
