@@ -1,6 +1,8 @@
 package middleware
 
-import "context"
+import (
+	"context"
+)
 
 type Handler func(ctx context.Context) (any, error)
 

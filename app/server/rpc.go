@@ -1,24 +1,64 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/zngue/zng_app/app/server/middleware"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
 
-// GRPCServer 封装 gRPC 服务器，提供优雅启动和关闭功能
 type GRPCServer struct {
 	*grpc.Server
 	listener net.Listener
 }
 
-// Start 启动 gRPC 服务器并处理优雅关闭
+type GRPCServerOption func(*grpcServerConfig)
+
+type grpcServerConfig struct {
+	grpcOpts   []grpc.ServerOption
+	registry   *middleware.Registry
+	reflection bool
+}
+
+func WithGRPCOption(opts ...grpc.ServerOption) GRPCServerOption {
+	return func(c *grpcServerConfig) {
+		c.grpcOpts = append(c.grpcOpts, opts...)
+	}
+}
+
+func WithGRPCMiddlewareRegistry(r *middleware.Registry) GRPCServerOption {
+	return func(c *grpcServerConfig) {
+		c.registry = r
+	}
+}
+
+func WithGRPCReflection() GRPCServerOption {
+	return func(c *grpcServerConfig) {
+		c.reflection = true
+	}
+}
+
+func unaryServerInterceptor(r *middleware.Registry) grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		operation := info.FullMethod
+		h := r.Build(operation, func(ctx context.Context) (any, error) {
+			return handler(ctx, req)
+		})
+		out, err := h(ctx)
+		afterH := r.BuildAfter(operation, func(ctx context.Context, err error, in any, rs any) {})
+		afterH(ctx, err, req, out)
+		return out, err
+	}
+}
+
 func (s *GRPCServer) Start() error {
 	go func() {
 		log.Printf("gRPC server starting on %s", s.listener.Addr().String())
@@ -31,46 +71,54 @@ func (s *GRPCServer) Start() error {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("Shutting down gRPC server...")
-	s.Server.Stop()
+	if err := s.Stop(); err != nil {
+		return fmt.Errorf("failed to gracefully shutdown gRPC server: %w", err)
+	}
 	log.Println("gRPC server stopped")
 	return nil
 }
+
 func (s *GRPCServer) Stop() error {
 	if s.Server == nil {
-		log.Println("gRPC server is nil, nothing to stop")
-		return nil
+		return fmt.Errorf("server is nil")
 	}
-	s.Server.GracefulStop()
-	return nil
+	done := make(chan struct{})
+	go func() {
+		s.Server.GracefulStop()
+		close(done)
+	}()
+	select {
+	case <-done:
+		return nil
+	case <-time.After(5 * time.Second):
+		s.Server.Stop()
+		return fmt.Errorf("gRPC server graceful shutdown timed out, forced stop")
+	}
 }
-func NewGRPCServer(addr string, opts ...grpc.ServerOption) (server *GRPCServer, err error) {
-	// 创建 gRPC 服务器
-	grpcServer := grpc.NewServer(opts...)
-	// 创建监听器
+
+func NewGRPCServer(addr string, opts ...GRPCServerOption) (*GRPCServer, error) {
+	cfg := &grpcServerConfig{}
+	for _, opt := range opts {
+		opt(cfg)
+	}
+	if cfg.registry != nil {
+		cfg.grpcOpts = append(cfg.grpcOpts, grpc.UnaryInterceptor(unaryServerInterceptor(cfg.registry)))
+		middleware.SetRegistry(cfg.registry)
+	}
+	grpcServer := grpc.NewServer(cfg.grpcOpts...)
+	if cfg.reflection {
+		reflection.Register(grpcServer)
+	}
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
-		err = fmt.Errorf("failed to listen on address %s: %w", addr, err)
-		return
+		return nil, fmt.Errorf("failed to listen on address %s: %w", addr, err)
 	}
-	server = &GRPCServer{
+	return &GRPCServer{
 		Server:   grpcServer,
 		listener: listener,
-	}
-	return server, nil
+	}, nil
 }
 
-// NewGRPCServerWithReflection 创建带反射功能的 gRPC 服务器实例
-func NewGRPCServerWithReflection(addr string, opts ...grpc.ServerOption) (*GRPCServer, error) {
-	server, err := NewGRPCServer(addr, opts...)
-	if err != nil {
-		return nil, err
-	}
-	// 注册反射服务，便于调试和测试
-	reflection.Register(server.Server)
-	return server, nil
-}
-
-// GetAddr 返回服务器监听地址
 func (s *GRPCServer) GetAddr() string {
 	if s.listener == nil {
 		return ""
