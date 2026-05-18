@@ -12,7 +12,7 @@ func logF(s string, i ...any) (data []zap.Field) {
 	begin := time.Now()
 	data = append(data, zap.String("serviceName", zng_app.AppName))
 	data = append(data, zap.String("elapsed", begin.Format("2006-01-02 15:04:05")))
-	data = append(data, zap.Any("log_data", fmt.Sprintf(s, i...)))
+	data = append(data, zap.Any("message", fmt.Sprintf(s, i...)))
 	return
 }
 func log(i ...any) (data []zap.Field) {
@@ -22,39 +22,41 @@ func log(i ...any) (data []zap.Field) {
 	}
 	data = append(data, zap.String("serviceName", zng_app.AppName))
 	data = append(data, zap.String("elapsed", begin.Format("2006-01-02 15:04:05")))
-	data = append(data, zap.Any("log_data", i))
+	if len(i) >= 1 {
+		data = append(data, zap.Any("message", i[0]))
+	}
 	return
 }
 func Errorf(s string, i ...any) {
 	data := logF(s, i...)
-	Default().Error("app_info", data...)
+	Default().Error("message", data...)
 }
 func Error(i ...any) {
 	data := log(i...)
-	Default().Error("app_info", data...)
+	Default().Error("message", data...)
 }
 func Warnf(s string, i ...any) {
 	data := logF(s, i...)
-	Default().Warn("app_info", data...)
+	Default().Warn("message", data...)
 }
 func Warn(i ...any) {
 	data := log(i...)
-	Default().Warn("app_info", data...)
+	Default().Warn("message", data...)
 }
 func Infof(s string, i ...any) {
 	data := logF(s, i...)
-	Default().Info("app_info", data...)
+	Default().Info("message", data...)
 
 }
 func Info(i ...any) {
 	data := log(i...)
-	Default().Info("app_info", data...)
+	Default().Info("message", data...)
 }
 func Debugf(s string, i ...any) {
 	data := logF(s, i...)
-	Default().Debug("app_info", data...)
+	Default().Debug("message", data...)
 }
 func Debug(i ...any) {
 	data := log(i...)
-	Default().Debug("app_info", data...)
+	Default().Debug("message", data...)
 }
