@@ -95,43 +95,13 @@ func (d *ConnDB[T]) Content(ctx context.Context, data *ContentRequest) (resData 
 	})
 	err = db.Take(&resData).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		resData = nil
-		err = nil
+		err = errors_ez.Wrap(err, "数据不存在")
 		return
 	}
 	if err != nil {
+		err = errors_ez.Wrap(err)
 		resData = nil
 	}
-	return
-}
-
-// List 获取列表
-func (d *ConnDB[T]) List(ctx context.Context, req *ListRequest) (list []*T, err error) {
-	var (
-		count int64
-	)
-	db := d.source.WithContext(ctx).Model(d.model)
-	db = d.ListHelper(db, req)
-	page := NewPages(req.Page, req.PageSize)
-	if req.Page != PageNoPagination { //判断是否分耶
-		db = page.PageHandle(db)
-	}
-	if req.IsCount {
-		err = db.Count(&count).Error
-		if err != nil {
-			err = errors_ez.Wrap(err, "count error")
-			return
-		}
-	}
-	err = db.Find(&list).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		err = nil
-	}
-	if err != nil {
-		err = errors_ez.Wrap(err, "list error")
-		return
-	}
-
 	return
 }
 
@@ -153,7 +123,7 @@ func (d *ConnDB[T]) ListHelper(db *gorm.DB, data *ListRequest) *gorm.DB {
 }
 
 // ListPage 获取列表带分页
-func (d *ConnDB[T]) ListPage(ctx context.Context, req *ListRequest) (data *ListResponse[T], err error) {
+func (d *ConnDB[T]) List(ctx context.Context, req *ListRequest) (data *ListResponse[T], err error) {
 	db := d.source.WithContext(ctx).Model(d.model)
 	db = d.ListHelper(db, req)
 	page := NewPages(req.Page, req.PageSize)
@@ -256,6 +226,10 @@ func (d *ConnDB[T]) UpdateWithResult(ctx context.Context, where, data map[string
 	result := db.Updates(data)
 	rowsAffected = result.RowsAffected
 	err = result.Error
+	if err != nil {
+		err = errors_ez.Wrap(err, "更新失败")
+		return
+	}
 	return
 }
 func (d *ConnDB[T]) UpdateById(ctx context.Context, id uint32, data map[string]any) (err error) {
@@ -282,7 +256,9 @@ func (d *ConnDB[T]) Delete(ctx context.Context, where map[string]any) (err error
 	}
 	db = d.Where(where, db)
 	err = db.Delete(d.model).Error
-
+	if err != nil {
+		err = errors_ez.Wrap(err, "删除失败")
+	}
 	return
 }
 
@@ -291,13 +267,18 @@ func (d *ConnDB[T]) Count(ctx context.Context, where map[string]any) (count int6
 	db := d.source.WithContext(ctx).Model(d.model)
 	db = d.Where(where, db)
 	err = db.Count(&count).Error
-
+	if err != nil {
+		err = errors_ez.Wrap(err, "统计失败")
+	}
 	return
 }
 func (d *ConnDB[T]) Exec(ctx context.Context, where map[string]any, fn func(conn *gorm.DB) (connErr error)) (err error) {
 	db := d.source.WithContext(ctx).Model(d.model)
 	db = d.Where(where, db)
 	err = fn(db)
+	if err != nil {
+		err = errors_ez.Wrap(err, "执行失败")
+	}
 	return
 }
 
@@ -316,8 +297,7 @@ func NewDBRepo[T any](source *gorm.DB) ConnRepo[T] {
 
 type ConnRepo[T any] interface {
 	ContentById(ctx context.Context, id uint32) (resData *T, err error)
-	ListPage(ctx context.Context, req *ListRequest) (data *ListResponse[T], err error)
-	List(ctx context.Context, req *ListRequest) (items []*T, err error)
+	List(ctx context.Context, req *ListRequest) (data *ListResponse[T], err error)
 	Content(ctx context.Context, req *ContentRequest) (data *T, err error)
 	Add(ctx context.Context, req *T) (err error)
 	AddMore(ctx context.Context, req []*T) (err error)
