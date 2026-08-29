@@ -1,4 +1,7 @@
 package zng_app
 
 var AppName = "app"
-var SyncLogger = false
+
+func SetAppName(name string) {
+	AppName = name
+}
